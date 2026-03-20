@@ -7,10 +7,10 @@ class ProductService():
     def __init__(self,repo : ProductRepository):
         self.repo = repo
     async def _get_prod_or_404(self, prod_id: int) -> Product:
-        user = await self.repo.get_by_id(prod_id)
-        if not user:
+        prod = await self.repo.get_by_id(prod_id)
+        if not prod:
             raise HTTPException(status_code=404, detail='Продукт не найден')
-        return user
+        return prod
     async def get_all_prod(self):
         result = await self.repo.get_all()
         return result

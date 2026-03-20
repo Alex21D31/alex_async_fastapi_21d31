@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
+from models import Status
 class BaseSchema(BaseModel):
     model_config = {'from_attributes': True}
 class CreateUser(BaseModel):
@@ -61,3 +62,5 @@ class UpdateProduct(BaseModel):
     quantity : int | None = None
 class UpdateOrder(BaseModel):
     info : str | None = None
+class UpdateStatus(BaseModel):
+    status : Status

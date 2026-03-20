@@ -11,6 +11,9 @@ class ProductRepository:
     async def get_by_id(self, id : int) -> Product | None:
         result = await self.db.execute(select(Product).where(Product.id == id))
         return result.scalar_one_or_none()
+    async def get_by_name(self,name : str) -> Product | None:
+        result = await self.db.execute(select(Product).where(Product.name == name))
+        return result.scalar_one_or_none()
     async def save(self, prod : Product) -> Product:
         self.db.add(prod)
         await self.db.commit()
