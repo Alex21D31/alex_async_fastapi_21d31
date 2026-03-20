@@ -1,6 +1,6 @@
 from repositories.user_repo import UserRepository
 from auth import hash_password, verify_password, create_access_token,create_refresh_token 
-from schemas import CreateUser, UpdateUser, UpdatePassword
+from schemas import CreateUser
 from models import User
 from fastapi import HTTPException
 
@@ -36,7 +36,7 @@ class UserService:
     async def get_me(self,id : int) -> dict:
         user = await self._get_user_or_404(id)
         return user
-    async def update(self, data : dict, update_data : dict) -> dict:
+    async def update(self, update_data : dict, data : dict) -> dict:
         user = await self._get_user_or_404(data['sub'])
         update_user = await self.repo.update(user, update_data)
         return update_user
