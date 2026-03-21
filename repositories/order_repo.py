@@ -8,7 +8,10 @@ class OrderRepository:
         self.db = db
     async def get_by_id(self, id : int):
         result = await self.db.execute(select(Order).where(Order.id == id))
-        return result              
+        return result            
+    async def get_all(self):
+        result = await self.db.execute(select(Order))
+        return result.scalars().all()  
     async def get_by_id_for_user(self, id : int, user_id : int) -> Order | None:
         result = await self.db.execute(select(Order).where(Order.id == id, Order.user_id == user_id).options(joinedload(Order.items).joinedload(OrderItem.product)))
         return result.scalar_one_or_none()
