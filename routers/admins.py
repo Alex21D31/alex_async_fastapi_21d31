@@ -27,8 +27,5 @@ async def user_ban(user_id : int, token_data : dict = Depends(verify_token), ser
 @require_role('admin', 'creater')
 async def get_all_orders(token_data : dict = Depends(verify_token), service : AdminService = Depends(get_admin_service)):
     return await service.get_all_orders()
-@router.patch('/orders/{id}/status', response_model=OutOrder)
-@require_role('admin', 'creater')
-async def update_status(id : int, new_status : Status, token_data : dict = Depends(verify_token), service : AdminService = Depends(get_admin_service)):
-    return await service.update_order_status(id, new_status)
+
 

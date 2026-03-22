@@ -42,7 +42,7 @@ class Order(Base):
     status : Mapped[str] = mapped_column(Enum(Status), default=Status.pending)
     user_id : Mapped[int] = mapped_column(ForeignKey('users.id'))
     user : Mapped['User'] = relationship('User', back_populates='orders')
-    items : Mapped[list['OrderItem']] = relationship('OrderItem', back_populates='order',cascade='all, delete-orphan')
+    items : Mapped[list['OrderItem']] = relationship('OrderItem', back_populates='order',cascade='all, delete-orphan', lazy='selectin')
 class OrderItem(Base):
     __tablename__ = 'orderitems'
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -50,4 +50,4 @@ class OrderItem(Base):
     product_id : Mapped[int] = mapped_column(ForeignKey('products.id'))
     quantity : Mapped[int]
     order : Mapped['Order'] = relationship('Order', back_populates='items')
-    product : Mapped['Product'] = relationship('Product', back_populates='items')
+    product : Mapped['Product'] = relationship('Product', back_populates='items',lazy='selectin')

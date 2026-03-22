@@ -23,6 +23,7 @@ async def update_order(order_id : int, new_data : UpdateOrder, token_data : dict
 @require_role('admin', 'creater')
 async def update_status(id : int, new_status : Status,token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
     return await service.update_status(id, new_status)
+@router.delete('/{id}')
 @require_role('admin', 'creater')
 async def delete_order(id : int,  token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
     return await service.delete_order(id)
