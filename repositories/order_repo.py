@@ -15,6 +15,9 @@ class OrderRepository:
     async def get_by_id_for_user(self, id : int, user_id : int) -> Order | None:
         result = await self.db.execute(select(Order).where(Order.id == id, Order.user_id == user_id).options(joinedload(Order.items).joinedload(OrderItem.product)))
         return result.scalar_one_or_none()
+    async def get_all_orders_by_user(self, user_id : int):
+        result = await self.db.execute(select(Order).where(Order.user_id == user_id).options(joinedload(Order.items).joinedload(OrderItem.product)))
+        return result.scalars().unique().all()
     async def save(self, order : Order) -> Order:
         self.db.add(order)
         await self.db.commit()

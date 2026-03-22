@@ -36,8 +36,11 @@ class OrderService:
             self.db.add(order_item)
         await self.db.commit()
         return order
-    async def get_one_order(self, order_id, data : dict):
-        result = await self.order_repo.get_by_id_for_user(order_id, data['sub'])
+    async def get_all_orders(self, data : dict):
+        result = await self.order_repo.get_all_orders_by_user(int(data['sub']))
+        return result
+    async def get_one_order(self, order_id : int, data : dict):
+        result = await self.order_repo.get_by_id_for_user(order_id, int(data['sub']))
         if not result:
             raise HTTPException(404, 'Заказ не найден')
         return result

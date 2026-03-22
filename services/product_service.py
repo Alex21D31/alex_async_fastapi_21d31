@@ -12,11 +12,9 @@ class ProductService():
             raise HTTPException(status_code=404, detail='Продукт не найден')
         return prod
     async def get_all_prod(self):
-        result = await self.repo.get_all()
-        return result
+        return await self.repo.get_all()
     async def get_by_id_prod(self, id : int):
-        prod = await self._get_prod_or_404(id)
-        return prod
+        return await self.repo.get_by_id(id)
     async def create(self, prod : CreateProduct) -> dict:
         product = Product(
             name = prod.name,
@@ -24,8 +22,7 @@ class ProductService():
             price = prod.price,
             quantity = prod.quantity
         )
-        result = await self.repo.save(product)
-        return result
+        return await self.repo.save(product)
     async def update(self,prod_id : int, new_data : UpdateProduct) -> dict:
         prod = await self._get_prod_or_404(prod_id)
         return await self.repo.update(prod, new_data.model_dump(exclude_none=True)) 

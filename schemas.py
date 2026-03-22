@@ -64,3 +64,6 @@ class UpdateOrder(BaseModel):
     info : str | None = None
 class UpdateStatus(BaseModel):
     status : Status
+class UserLogin(BaseModel):
+    email : str
+    password : str

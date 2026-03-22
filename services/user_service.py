@@ -36,8 +36,10 @@ class UserService:
     async def get_me(self,id : int) -> dict:
         user = await self._get_user_or_404(id)
         return user
-    async def update(self, update_data : UpdateUser, data : dict) -> dict:
+    async def update(self, update_data : UpdateUser, data : dict, password : str) -> dict:
         user = await self._get_user_or_404(data['sub'])
+        if not verify_password(password, user.password):
+            raise HTTPException(status_code=403,detail='Неверный пароль')
         return await self.repo.update(user, update_data.model_dump(exclude_none=True))
     async def change_password(self,data : dict, passwords : UpdatePassword) -> dict:
         user = await self._get_user_or_404(data['sub'])
@@ -46,9 +48,11 @@ class UserService:
             raise HTTPException(status_code=403, detail='Пароль неверный.')
         new_pass = hash_password(passwords.new_password)
         user.password = new_pass
-        result = await self.repo.save(user)
-        return result
-    async def delete(self, data : dict) -> str:
+        await self.repo.save(user)
+        return "Ваш пароль успешно изменен."
+    async def delete(self, password : str,  data : dict) -> str:
         user = await self._get_user_or_404(data['sub'])
+        if not verify_password(password, user.password):
+            raise HTTPException(status_code=403,detail='Неверный пароль')
         await self.repo.delete(user)
         return 'Вы успешно удалены из базы данных'
