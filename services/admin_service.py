@@ -20,7 +20,7 @@ class AdminService:
     async def get_all_users(self):
         return  await self.user_repo.get_all()
     async def get_user_by_id(self, id : int):
-        return await self._get_user_or_404(id)
+        return await self.user_repo.get_by_id(id)
     async def change_role(self, id : int, role : Role):
         user = await self._get_user_or_404(id)
         return await self.user_repo.update(user, {'role' : role})
