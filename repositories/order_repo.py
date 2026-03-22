@@ -8,13 +8,13 @@ class OrderRepository:
         self.db = db
     async def get_by_id(self, id : int):
         result = await self.db.execute(select(Order).where(Order.id == id))
-        return result            
+        return result.scalar_one_or_none()           
     async def get_all(self):
         result = await self.db.execute(select(Order))
         return result.scalars().all()  
     async def get_by_id_for_user(self, id : int, user_id : int) -> Order | None:
         result = await self.db.execute(select(Order).where(Order.id == id, Order.user_id == user_id).options(joinedload(Order.items).joinedload(OrderItem.product)))
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
     async def get_all_orders_by_user(self, user_id : int):
         result = await self.db.execute(select(Order).where(Order.user_id == user_id).options(joinedload(Order.items).joinedload(OrderItem.product)))
         return result.scalars().unique().all()
@@ -23,8 +23,8 @@ class OrderRepository:
         await self.db.commit()
         await self.db.refresh(order)
         return order
-    async def update(self, order : Order, data : dict) -> Order:
-        for key,value in data.items():
+    async def update(self, order : Order, update_data : dict) -> Order:
+        for key,value in update_data.items():
             if value is not None:
                 setattr(order,key,value)
         await self.db.commit()

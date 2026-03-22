@@ -22,7 +22,7 @@ class User(Base):
     role : Mapped[str] = mapped_column(Enum(Role), default=Role.user)
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at : Mapped[datetime] = mapped_column(nullable=True,onupdate=func.now())
-    orders : Mapped[list['Order']] = relationship('Order', back_populates='user')
+    orders : Mapped[list['Order']] = relationship('Order', back_populates='user',lazy='selectin')
 class Product(Base):
     __tablename__ = 'products'
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -32,7 +32,7 @@ class Product(Base):
     quantity : Mapped[int] = mapped_column(nullable=False)
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at : Mapped[datetime] = mapped_column(nullable=True,onupdate=func.now())
-    items : Mapped[list['OrderItem']] = relationship('OrderItem', back_populates='product')
+    items : Mapped[list['OrderItem']] = relationship('OrderItem', back_populates='product', cascade='all, delete-orphan')
 class Order(Base):
     __tablename__ = 'orders'
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -41,8 +41,8 @@ class Order(Base):
     updated_at : Mapped[datetime] = mapped_column(nullable=True,onupdate=func.now())
     status : Mapped[str] = mapped_column(Enum(Status), default=Status.pending)
     user_id : Mapped[int] = mapped_column(ForeignKey('users.id'))
-    user : Mapped['Product'] = relationship('User', back_populates='orders')
-    items : Mapped[list['OrderItem']] = relationship('OrderItem', back_populates='order')
+    user : Mapped['User'] = relationship('User', back_populates='orders')
+    items : Mapped[list['OrderItem']] = relationship('OrderItem', back_populates='order',cascade='all, delete-orphan')
 class OrderItem(Base):
     __tablename__ = 'orderitems'
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

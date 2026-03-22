@@ -19,8 +19,8 @@ class UserRepository:
         await self.db.commit()
         await self.db.refresh(user)
         return user
-    async def update(self, user : User, data : dict) -> User:
-        for key,value in data.items():
+    async def update(self, user : User, update_data : dict) -> User:
+        for key,value in update_data.items():
             if value is not None:
                 setattr(user,key,value)
         await self.db.commit()

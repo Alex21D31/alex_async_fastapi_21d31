@@ -19,8 +19,8 @@ class ProductRepository:
         await self.db.commit()
         await self.db.refresh(prod)
         return prod
-    async def update(self, prod : Product, data : dict) -> Product:
-        for key,value in data.items():
+    async def update(self, prod : Product, update_data : dict) -> Product:
+        for key,value in update_data.items():
             if value is not None:
                 setattr(prod,key,value)
         await self.db.commit()

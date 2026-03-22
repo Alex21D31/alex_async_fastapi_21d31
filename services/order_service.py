@@ -7,10 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import Order, OrderItem, Status
 
 class OrderService:
-    def __init__(self, user_repo : UserRepository,order_repo: OrderRepository, product_repo: ProductRepository, db: AsyncSession):
+    def __init__(self,order_repo: OrderRepository, product_repo: ProductRepository, db: AsyncSession):
         self.order_repo = order_repo
         self.product_repo = product_repo
-        self.user_repo = user_repo
         self.db = db
     async def _get_order_or_404(self, order_id: int) -> Order:
         order = await self.order_repo.get_by_id(order_id)
