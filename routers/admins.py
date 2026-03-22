@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from dependencies import get_admin_service
 from auth import verify_token
 from decorators import require_role
-from models import Role, Status
+from models import Role
 
 router = APIRouter(prefix='/admin', tags=['admin'])
 @router.get('/users', response_model=list[OutUser])

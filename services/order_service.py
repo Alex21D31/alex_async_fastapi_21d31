@@ -1,6 +1,5 @@
 from repositories.order_repo import OrderRepository
 from repositories.product_repo import ProductRepository
-from repositories.user_repo import UserRepository
 from schemas import CreateOrder, UpdateOrder
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession

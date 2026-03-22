@@ -1,7 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from database import engine,Base
-import models
 from middleware import LogMiddleware
 from routers import auth, admins, users, orders, products
 
