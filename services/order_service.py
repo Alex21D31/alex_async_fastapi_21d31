@@ -43,8 +43,7 @@ class OrderService:
         return result
     async def update_order(self, order_id : int, patch_order : UpdateOrder):
         order = await self._get_order_or_404(order_id)
-        result = await self.order_repo.update(order, patch_order)
-        return result
+        return await self.order_repo.update(order, patch_order.model_dump(exclude_none=True)) 
     async def delete_order(self, order_id):
         order = await self._get_order_or_404(order_id)
         await self.order_repo.delete(order)

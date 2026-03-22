@@ -1,6 +1,6 @@
 from repositories.user_repo import UserRepository
 from auth import hash_password, verify_password, create_access_token,create_refresh_token 
-from schemas import CreateUser
+from schemas import CreateUser, UpdateUser, UpdatePassword
 from models import User
 from fastapi import HTTPException
 
@@ -18,8 +18,8 @@ class UserService:
             password = hash_password(data.password)
         )
         return await self.repo.save(user)
-    async def _get_user_or_404(self, user_id: int) -> User:
-        user = await self.repo.get_by_id(user_id)
+    async def _get_user_or_404(self, user_id: str) -> User:
+        user = await self.repo.get_by_id(int(user_id))
         if not user:
             raise HTTPException(status_code=404, detail='Пользователь не найден')
         return user
@@ -36,16 +36,15 @@ class UserService:
     async def get_me(self,id : int) -> dict:
         user = await self._get_user_or_404(id)
         return user
-    async def update(self, update_data : dict, data : dict) -> dict:
+    async def update(self, update_data : UpdateUser, data : dict) -> dict:
         user = await self._get_user_or_404(data['sub'])
-        update_user = await self.repo.update(user, update_data)
-        return update_user
-    async def change_password(self,data : dict, passwords : dict) -> dict:
+        return await self.repo.update(user, update_data.model_dump(exclude_none=True))
+    async def change_password(self,data : dict, passwords : UpdatePassword) -> dict:
         user = await self._get_user_or_404(data['sub'])
-        info = verify_password(passwords['old_password'], user.password)
+        info = verify_password(passwords.old_password, user.password)
         if not info:
             raise HTTPException(status_code=403, detail='Пароль неверный.')
-        new_pass = hash_password(passwords['new_password'])
+        new_pass = hash_password(passwords.new_password)
         user.password = new_pass
         result = await self.repo.save(user)
         return result

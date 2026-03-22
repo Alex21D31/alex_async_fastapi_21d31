@@ -1,5 +1,5 @@
 from repositories.product_repo import ProductRepository
-from schemas import CreateProduct
+from schemas import CreateProduct, UpdateProduct
 from models import Product
 from fastapi import HTTPException
 
@@ -26,10 +26,9 @@ class ProductService():
         )
         result = await self.repo.save(product)
         return result
-    async def update(self,prod_id : int, new_data : dict) -> dict:
+    async def update(self,prod_id : int, new_data : UpdateProduct) -> dict:
         prod = await self._get_prod_or_404(prod_id)
-        new_prod = await self.repo.update(prod, new_data)
-        return new_prod
+        return await self.repo.update(prod, new_data.model_dump(exclude_none=True)) 
     async def delete(self, prod_id : int) -> str:
         prod = await self._get_prod_or_404(prod_id)
         await self.repo.delete(prod)
