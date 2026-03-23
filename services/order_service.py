@@ -26,7 +26,6 @@ class OrderService:
             if product.quantity < item.quantity:
                 raise HTTPException(400, f'Недостаточно товара {product.name} на складе')
             product.quantity -= item.quantity
-            await self.product_repo.update(product, {'quantity': product.quantity})
             order_item = OrderItem(
                 order_id=order.id,
                 product_id=item.product_id,
