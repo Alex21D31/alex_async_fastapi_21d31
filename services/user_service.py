@@ -1,7 +1,7 @@
 from repositories.user_repo import UserRepository
 from auth import hash_password, verify_password, create_access_token,create_refresh_token 
 from schemas import CreateUser, UpdateUser, UpdatePassword
-from models import User
+from models import User, Role
 from fastapi import HTTPException
 
 class UserService:
@@ -18,7 +18,7 @@ class UserService:
             password = hash_password(data.password)
         )
         return await self.repo.save(user)
-    async def _get_user_or_404(self, user_id: str) -> User:
+    async def _get_user_or_404(self, user_id: int) -> User:
         user = await self.repo.get_by_id(int(user_id))
         if not user:
             raise HTTPException(status_code=404, detail='Пользователь не найден')
@@ -27,6 +27,8 @@ class UserService:
         user = await self.repo.get_by_email(email)
         if not user:
             raise HTTPException(status_code=401, detail='Неверный email или пароль')
+        if user.role == Role.banned:
+            raise HTTPException(status_code=409, detail='Ваш аккаунт заблокирован.')
         if not verify_password(password, user.password):
             raise HTTPException(status_code=401,detail='Неверный email или пароль')
         return {

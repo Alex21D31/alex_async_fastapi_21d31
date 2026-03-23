@@ -13,11 +13,12 @@ class OrderService:
     async def _get_order_or_404(self, order_id: int) -> Order:
         order = await self.order_repo.get_by_id(order_id)
         if not order:
-            raise HTTPException(status_code=404, detail='Продукт не найден')
+            raise HTTPException(status_code=404, detail='Заказ не найден')
         return order
     async def create_order(self, user_id: int, data: CreateOrder) -> Order:
         order = Order(user_id=user_id, info=data.info)
-        await self.order_repo.save(order)
+        self.db.add(order)
+        await self.db.flush()
         for item in data.items:
             product = await self.product_repo.get_by_id(item.product_id)
             if not product:
@@ -33,6 +34,7 @@ class OrderService:
             )
             self.db.add(order_item)
         await self.db.commit()
+        await self.db.refresh(order)
         return order
     async def get_all_orders(self, data : dict):
         result = await self.order_repo.get_all_orders_by_user(int(data['sub']))

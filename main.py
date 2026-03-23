@@ -1,13 +1,10 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from database import engine,Base
 from middleware import LogMiddleware
 from routers import auth, admins, users, orders, products
 
 @asynccontextmanager
 async def lifespan(app : FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
     yield
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(LogMiddleware)

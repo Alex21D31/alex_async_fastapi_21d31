@@ -17,8 +17,8 @@ async def get_my_orders(token_data : dict = Depends(verify_token), service : Ord
 async def get_one_order(id : int, token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
     return await service.get_one_order(id, token_data)
 @router.patch('/{id}',response_model=OutOrder)
-async def update_order(order_id : int, new_data : UpdateOrder, token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
-    return await service.update_order(order_id, new_data)
+async def update_order(id : int, new_data : UpdateOrder, token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
+    return await service.update_order(id, new_data)
 @router.patch('/status/{id}',response_model=OutOrder)
 @require_role('admin', 'creater')
 async def update_status(id : int, new_status : Status,token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
