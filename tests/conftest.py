@@ -90,12 +90,12 @@ def verify_admin():
     app.dependency_overrides.pop(verify_token, None)
 
 @pytest.fixture
-def verify_creater():
+def verify_creator():
     app.dependency_overrides[verify_token] = lambda: {
         'sub' : '5',
         'email' : 'alex@.test',
         'token' : 'access',
-        'role' : 'creater'
+        'role' : 'creator'
     }
     yield
     app.dependency_overrides.pop(verify_token, None)

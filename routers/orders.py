@@ -20,10 +20,10 @@ async def get_one_order(id : int, token_data : dict = Depends(verify_token), ser
 async def update_order(id : int, new_data : UpdateOrder, token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
     return await service.update_order(id, new_data)
 @router.patch('/status/{id}',response_model=OutOrder)
-@require_role('admin', 'creater')
+@require_role('admin', 'creator')
 async def update_status(id : int, new_status : Status,token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
     return await service.update_status(id, new_status)
 @router.delete('/{id}')
-@require_role('admin', 'creater')
+@require_role('admin', 'creator')
 async def delete_order(id : int,  token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
     return await service.delete_order(id)

@@ -6,7 +6,7 @@ import enum
 class Role(enum.Enum):
     user = 'user'
     admin = 'admin'
-    creater = 'creater'
+    creator = 'creator'
     banned = 'banned'
 class Status(enum.Enum):
     pending = 'pending'

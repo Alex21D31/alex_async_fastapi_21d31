@@ -12,14 +12,14 @@ async def get_all_products(service : ProductService = Depends(get_product_servic
 async def get_product(id : int, service : ProductService = Depends(get_product_service)):
     return await service.get_by_id_prod(id)
 @router.post('', response_model=OutProduct)
-@require_role('admin', 'creater')
+@require_role('admin', 'creator')
 async def create_product(new_product : CreateProduct, token_data : dict = Depends(verify_token),service : ProductService = Depends(get_product_service)):
     return await service.create(new_product)
 @router.patch('/{id}',response_model=OutProduct)
-@require_role('admin', 'creater')
+@require_role('admin', 'creator')
 async def patch_product(id : int, new_data : UpdateProduct,token_data : dict = Depends(verify_token),service : ProductService = Depends(get_product_service)):
     return await service.update(id, new_data)
 @router.delete('/{id}')
-@require_role('admin', 'creater')
+@require_role('admin', 'creator')
 async def delete_product(id : int,token_data : dict = Depends(verify_token),service : ProductService = Depends(get_product_service)):
     return await service.delete(id)

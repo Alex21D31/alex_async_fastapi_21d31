@@ -26,7 +26,7 @@ class AdminService:
         return await self.user_repo.update(user, {'role' : role})
     async def ban_user(self, id : int, token : dict):
         target = await self._get_user_or_404(id)
-        if token['role'] == 'admin' and target.role.value in ['admin', 'creater']:
+        if token['role'] == 'admin' and target.role.value in ['admin', 'creator']:
             raise HTTPException(status_code=403, detail='Недостаточно прав')
         if int(token['sub']) == id:
             raise HTTPException(status_code=400,detail='Нельзя заблокировать самого себя')

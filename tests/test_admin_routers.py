@@ -31,7 +31,7 @@ async def test_get_user_by_id_404(client : AsyncClient, verify_admin, admin_serv
     response = await client.get('/admin/users/5')
     assert response.status_code == 404
 
-async def test_get_new_role_200(client : AsyncClient, verify_creater, admin_service, mock_user_repo, fake_user):
+async def test_get_new_role_200(client : AsyncClient, verify_creator, admin_service, mock_user_repo, fake_user):
     mock_user_repo.get_by_id.return_value = fake_user
     mock_user_repo.update.return_value = fake_user
     response = await client.patch('/admin/users/5/role?role=admin')
@@ -44,12 +44,12 @@ async def test_get_new_role_401(client : AsyncClient, admin_service, mock_user_r
     mock_user_repo.update.return_value = fake_user
     response = await client.patch('/admin/users/5/role?role=admin')
     assert response.status_code == 401
-async def test_get_new_role_404(client : AsyncClient, verify_creater, admin_service, mock_user_repo, fake_user):
+async def test_get_new_role_404(client : AsyncClient, verify_creator, admin_service, mock_user_repo, fake_user):
     mock_user_repo.get_by_id.return_value = None
     response = await client.patch('/admin/users/5/role?role=admin')
     assert response.status_code == 404
 
-async def test_user_ban_200(client: AsyncClient, verify_creater, admin_service, mock_user_repo, fake_user):
+async def test_user_ban_200(client: AsyncClient, verify_creator, admin_service, mock_user_repo, fake_user):
     mock_user_repo.get_by_id.return_value = fake_user
     mock_user_repo.update.return_value = fake_user
     response = await client.patch('/admin/users/10/ban')
@@ -75,7 +75,7 @@ async def test_user_ban_404(client : AsyncClient, verify_admin, admin_service, m
     response = await client.patch('/admin/users/10/ban')
     assert response.status_code == 404
 
-async def test_get_all_orders_200(client : AsyncClient, verify_creater, admin_service, mock_product_repo, fake_order):
+async def test_get_all_orders_200(client : AsyncClient, verify_creator, admin_service, mock_product_repo, fake_order):
     mock_product_repo.get_all.return_value = [fake_order]
     response = await client.get('/admin/orders')
     assert response.status_code == 200
