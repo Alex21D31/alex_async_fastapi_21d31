@@ -174,3 +174,17 @@ def mock_refresh(fake_order):
         obj.info = fake_order.info
         obj.items = fake_order.items
     return _refresh
+
+@pytest.fixture
+def fake_target_user():
+    user = MagicMock()
+    user.id = 10
+    user.name = 'Target'
+    user.email = 'target@test.com'
+    user.phone = '9876543210'
+    user.role = MagicMock()
+    user.role.value = 'user'
+    user.created_at = datetime.now(timezone.utc)
+    user.updated_at = None
+    user.orders = []
+    return user
