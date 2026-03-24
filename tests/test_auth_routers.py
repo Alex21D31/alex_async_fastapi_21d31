@@ -1,5 +1,4 @@
-import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import  patch
 
 async def test_register_200(client, mock_user_repo, user_service, fake_user):
     mock_user_repo.get_by_email.return_value = None
@@ -28,7 +27,7 @@ async def test_login_401_1(client, mock_user_repo, user_service):
     data = {'email' : 'alex@test.com', 'password': 'pass'}
     response = await client.post('/auth/login', json=data)
     assert response.status_code == 401
-    
+
 async def test_login_401_2(client, mock_user_repo, user_service, fake_user_for_login):
     mock_user_repo.get_by_email.return_value = fake_user_for_login
     data = {'email' : 'alex@test.com', 'password': 'pass'}
