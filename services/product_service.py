@@ -14,8 +14,10 @@ class ProductService():
     async def get_all_prod(self):
         return await self.repo.get_all()
     async def get_by_id_prod(self, id : int):
-        return await self.repo.get_by_id(id)
+        return await self._get_prod_or_404(id)
     async def create(self, prod : CreateProduct) -> dict:
+        if await self.repo.get_by_name(prod.name):
+            raise HTTPException(status_code=409, detail='Такой продукт уже существует.')
         product = Product(
             name = prod.name,
             description = prod.description,
