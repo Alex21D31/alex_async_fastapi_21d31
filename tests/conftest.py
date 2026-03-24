@@ -46,7 +46,9 @@ def product_service(mock_product_repo):
 @pytest.fixture
 def order_service(mock_order_repo, mock_product_repo):
     mock_db = AsyncMock()
+    mock_db.add = MagicMock()
     service = OrderService(mock_order_repo, mock_product_repo, mock_db)
+    service.db = mock_db
     app.dependency_overrides[get_order_service] = lambda: service
     yield service
     app.dependency_overrides.pop(get_order_service, None)
@@ -149,3 +151,26 @@ def fake_product():
     product.created_at = datetime.now(timezone.utc)
     product.updated_at = None
     return product
+
+@pytest.fixture
+def fake_order():
+    order = MagicMock()
+    order.id = 1
+    order.info = 'test'
+    order.status = 'pending'
+    order.user_id = 5
+    order.created_at = datetime.now(timezone.utc)
+    order.updated_at = None
+    order.items = []
+    return order
+
+@pytest.fixture
+def mock_refresh(fake_order):
+    async def _refresh(obj):
+        obj.id = fake_order.id
+        obj.created_at = fake_order.created_at
+        obj.status = fake_order.status
+        obj.user_id = fake_order.user_id
+        obj.info = fake_order.info
+        obj.items = fake_order.items
+    return _refresh
