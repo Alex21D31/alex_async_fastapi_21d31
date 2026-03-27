@@ -2,8 +2,10 @@ from datetime import datetime, timezone, timedelta
 from passlib.context import CryptContext
 from jose import jwt, ExpiredSignatureError, JWTError
 from fastapi import HTTPException, Depends
+from services.redis_service import redis_service
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from config import settings
+import uuid
 security = HTTPBearer()
 LIVE_TIME = settings.LIVE_TIME
 ALGORITHM = settings.ALGORITHM
@@ -21,11 +23,13 @@ def change_password(passwords : dict, hash : str) -> str:
 def create_access_token(data : dict) -> str:
     info = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=LIVE_TIME)
+    uid = str(uuid.uuid4())
     token_data = {
         'sub' : str(info['id']),
         'email' : info['email'],
         'token' : 'access',
         'exp' : expire,
+        'jti' : uid,
         'role' : info['role']
     }
     token=jwt.encode(token_data,SECRET_KEY,algorithm=ALGORITHM)
@@ -33,19 +37,24 @@ def create_access_token(data : dict) -> str:
 def create_refresh_token(data : dict) -> str:
     info = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(days=30)
+    uid = str(uuid.uuid4())
     token_data = {
         'sub' : str(info['id']),
         'email' : info['email'],
         'token' : 'refresh',
         'exp' : expire,
+        'jti' : uid,
         'role' : info['role']
     }
     token=jwt.encode(token_data,SECRET_KEY,algorithm=ALGORITHM)
     return token
-def verify_token(credintals : HTTPAuthorizationCredentials = Depends(security)) -> dict:
+async def verify_token(credintals : HTTPAuthorizationCredentials = Depends(security)) -> dict:
     token = credintals.credentials
     try:
         data = jwt.decode(token, SECRET_KEY,algorithms=[ALGORITHM])
+        jti = data.get('jti')
+        if await redis_service.is_blacklisted(jti):
+            raise HTTPException(status_code=401,detail="Токен аннулирован. Пожалуйста, войдите снова." )
         return data
     except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Срок действия токена истек.")

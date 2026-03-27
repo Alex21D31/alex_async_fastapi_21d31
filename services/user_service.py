@@ -1,5 +1,7 @@
 from repositories.user_repo import UserRepository
 from auth import hash_password, verify_password, create_access_token,create_refresh_token 
+from services.redis_service import redis_service
+from datetime import datetime,timezone
 from schemas import CreateUser, UpdateUser, UpdatePassword
 from models import User, Role
 from fastapi import HTTPException
@@ -35,6 +37,14 @@ class UserService:
             'access_token' : create_access_token({'id': user.id, 'email': user.email, 'role': user.role.value}),
             'refresh_token': create_refresh_token({'id': user.id, 'email': user.email, 'role': user.role.value})
         }
+    async def logout_user(self, payload : dict):
+        jti = payload.get('jti')
+        exp = payload.get('exp')
+        if not jti or not exp:
+            return
+        expite_seconds = int(exp - (datetime.now(timezone.utc).timestamp()))
+        if expite_seconds > 0:
+            await redis_service.add_to_blacklist(jti, expite_seconds)
     async def get_me(self,id : int) -> dict:
         user = await self._get_user_or_404(id)
         return user

@@ -2,9 +2,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from middleware import LogMiddleware
 from routers import auth, admins, users, orders, products
+from models import User, Product, Order, OrderItem
+from database import engine, Base
 
 @asynccontextmanager
 async def lifespan(app : FastAPI):
+    # Прямо перед запуском приложения создаем таблицы
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    print("🚀 База данных готова, таблицы созданы!")
     yield
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(LogMiddleware)
