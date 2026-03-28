@@ -3,6 +3,8 @@ from repositories.user_repo import UserRepository
 from services.redis_service import redis_service
 from fastapi import HTTPException
 from models import User, Role, Status, Order
+import logging
+logger = logging.getLogger(__name__)
 
 class AdminService:
     def __init__(self, user_repo : UserRepository, order_repo : OrderRepository):
@@ -33,9 +35,9 @@ class AdminService:
             raise HTTPException(status_code=400,detail='Нельзя заблокировать самого себя')
         await self.user_repo.update(target, {'role' : Role.banned})
         try:
-            await redis_service.redis_client.sadd('banned_users', str(id))
+            await redis_service.ban_user(id)
         except Exception as e:
-            print(f"Ошибка при добавлении {id} в редис: {e}")
+            logger.error(f"Ошибка при добавлении {id} в редис: {e}")
         return {'detail' : f"Пользователь с ID {id} успешно заблокирован"}
     async def get_all_orders(self):
         return await self.order_repo.get_all()

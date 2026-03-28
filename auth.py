@@ -6,6 +6,8 @@ from services.redis_service import redis_service
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from config import settings
 import uuid
+import logging
+logger = logging.getLogger(__name__)
 security = HTTPBearer()
 LIVE_TIME = settings.LIVE_TIME
 ALGORITHM = settings.ALGORITHM
@@ -54,13 +56,17 @@ async def verify_token(credintals : HTTPAuthorizationCredentials = Depends(secur
         data = jwt.decode(token, SECRET_KEY,algorithms=[ALGORITHM])
         jti = data.get('jti')
         user_id = str(data.get('sub'))
-        if await redis_service.redis_client.sismember('banned_users', user_id):
-            raise HTTPException(status_code=401, detail="Ваш аккаунт заблокировн.")
-        if await redis_service.is_blacklisted(jti):
-            raise HTTPException(status_code=401,detail="Токен аннулирован. Пожалуйста, войдите снова." )
-        return data
+        try:
+            if await redis_service.is_banned(user_id):
+                raise HTTPException(status_code=401, detail="Ваш аккаунт заблокирован.")
+            if await redis_service.is_blacklisted(jti):
+                raise HTTPException(status_code=401,detail="Токен аннулирован. Пожалуйста, войдите снова." )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Ошибка Redis при проверке токена: {e}")
     except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Срок действия токена истек.")
     except JWTError:
         raise HTTPException(status_code=401, detail="Невалидный токен")
-    
+    return data

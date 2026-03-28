@@ -5,6 +5,8 @@ from datetime import datetime,timezone
 from schemas import CreateUser, UpdateUser, UpdatePassword
 from models import User, Role
 from fastapi import HTTPException
+import logging
+logger = logging.getLogger(__name__)
 
 class UserService:
     def __init__(self,repo : UserRepository):
@@ -35,12 +37,9 @@ class UserService:
             raise HTTPException(status_code=401,detail='Неверный email или пароль')
         try:
             today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
-            key = f'active_users:{today}'
-            await redis_service.redis_client.sadd(key, str(user.id))
-            if await redis_service.redis_client.scard(key) == 1:
-                await redis_service.redis_client.expire(key,24 * 60 * 60)
+            await redis_service.track_active_user(user.id, today)
         except Exception as e:
-            print(f'Проблема занесение в редис. {e}')
+            logger.error(f'Проблема занесения в редис: {e}')
         return {
             'access_token' : create_access_token({'id': user.id, 'email': user.email, 'role': user.role.value}),
             'refresh_token': create_refresh_token({'id': user.id, 'email': user.email, 'role': user.role.value})
