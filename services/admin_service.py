@@ -3,6 +3,7 @@ from repositories.user_repo import UserRepository
 from services.redis_service import redis_service
 from fastapi import HTTPException
 from models import User, Role, Status, Order
+from datetime import datetime, timezone
 import logging
 logger = logging.getLogger(__name__)
 
@@ -39,8 +40,22 @@ class AdminService:
         except Exception as e:
             logger.error(f"Ошибка при добавлении {id} в редис: {e}")
         return {'detail' : f"Пользователь с ID {id} успешно заблокирован"}
+    async def user_unban(self, id : int, token : dict):
+        target = await self._get_user_or_404(id)
+        if int(token['sub']) == id:
+            raise HTTPException(status_code=400,detail='Нельзя разблокировать самого себя')
+        await self.user_repo.update(target, {'role' : Role.user})
+        try:
+            await redis_service.unban_user(id)
+        except Exception as e:
+            logger.error(f"Ошибка при удалении {id} из редис: {e}")
+        return {'detail' : f'Пользователь {id} успешно разблокирован'}
     async def get_all_orders(self):
         return await self.order_repo.get_all()
     async def update_order_status(self, order_id : int, new_status : Status):
         order = await self._get_order_or_404(order_id)
         return await self.order_repo.update(order, {'status' : new_status})
+    async def get_statistics(self):
+        today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        count = await redis_service.get_active_users_count(today)
+        return {'date': today, 'active_users': count}

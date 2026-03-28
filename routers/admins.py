@@ -27,5 +27,12 @@ async def user_ban(user_id : int, token_data : dict = Depends(verify_token), ser
 @require_role('admin', 'creator')
 async def get_all_orders(token_data : dict = Depends(verify_token), service : AdminService = Depends(get_admin_service)):
     return await service.get_all_orders()
-
+@router.patch('/users/{user_id}/unban')
+@require_role('admin', 'creator')
+async def user_unban(user_id : int, token_data : dict = Depends(verify_token),service : AdminService = Depends(get_admin_service)):
+    return await service.user_unban(user_id, token_data)
+@router.get('/statistics')
+@require_role('admin', 'creator')
+async def user_statistics(token_data : dict = Depends(verify_token),service : AdminService = Depends(get_admin_service)):
+    return await service.get_statistics()
 

@@ -25,13 +25,11 @@ class RedisService:
         await self.redis_client.sadd('banned_users', str(user_id))
     async def is_banned(self, user_id : str) -> bool:
         return await self.redis_client.sismember('banned_users', user_id)
-    
-    # --- ЕЩЕ НЕ РЕАЛИЗОВАННО ---
     async def unban_user(self, user_id : int):
         await self.redis_client.srem('banned_users', str(user_id))
 
-    async def track_active_user(self, user_id : int, data_key : str):
-        key = f'active_users:{data_key}'
+    async def track_active_user(self, user_id : int, date_key : str):
+        key = f'active_users:{date_key}'
         await self.redis_client.sadd(key, str(user_id))
         await self.redis_client.expireat(key, self._end_of_day())
     async def get_active_users_count(self, date_key : str) -> int:
@@ -40,5 +38,4 @@ class RedisService:
         now = datetime.now(timezone.utc)
         end = now.replace(hour=23, minute=59, second=59, microsecond=0)
         return int(end.timestamp())
-     
 redis_service = RedisService()
