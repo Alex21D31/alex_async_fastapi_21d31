@@ -30,9 +30,17 @@ class UserService:
         if not user:
             raise HTTPException(status_code=401, detail='Неверный email или пароль')
         if user.role == Role.banned:
-            raise HTTPException(status_code=409, detail='Ваш аккаунт заблокирован.')
+            raise HTTPException(status_code=401, detail='Ваш аккаунт заблокирован.')
         if not verify_password(password, user.password):
             raise HTTPException(status_code=401,detail='Неверный email или пароль')
+        try:
+            today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            key = f'active_users:{today}'
+            await redis_service.redis_client.sadd(key, str(user.id))
+            if await redis_service.redis_client.scard(key) == 1:
+                await redis_service.redis_client.expire(key,24 * 60 * 60)
+        except Exception as e:
+            print(f'Проблема занесение в редис. {e}')
         return {
             'access_token' : create_access_token({'id': user.id, 'email': user.email, 'role': user.role.value}),
             'refresh_token': create_refresh_token({'id': user.id, 'email': user.email, 'role': user.role.value})

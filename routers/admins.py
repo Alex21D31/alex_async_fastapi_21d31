@@ -19,7 +19,7 @@ async def get_user_by_id(id : int,token_data : dict = Depends(verify_token), ser
 @require_role('creator')
 async def get_new_role(user_id : int,role : Role, token_data : dict = Depends(verify_token), service : AdminService = Depends(get_admin_service)):
     return await service.change_role(user_id, role)
-@router.patch('/users/{user_id}/ban', response_model=OutUser)
+@router.patch('/users/{user_id}/ban')
 @require_role('admin', 'creator')
 async def user_ban(user_id : int, token_data : dict = Depends(verify_token), service : AdminService = Depends(get_admin_service)):
     return await service.ban_user(user_id, token_data)

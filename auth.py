@@ -53,6 +53,9 @@ async def verify_token(credintals : HTTPAuthorizationCredentials = Depends(secur
     try:
         data = jwt.decode(token, SECRET_KEY,algorithms=[ALGORITHM])
         jti = data.get('jti')
+        user_id = str(data.get('sub'))
+        if await redis_service.redis_client.sismember('banned_users', user_id):
+            raise HTTPException(status_code=401, detail="Ваш аккаунт заблокировн.")
         if await redis_service.is_blacklisted(jti):
             raise HTTPException(status_code=401,detail="Токен аннулирован. Пожалуйста, войдите снова." )
         return data
