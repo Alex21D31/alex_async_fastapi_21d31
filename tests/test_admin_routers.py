@@ -79,3 +79,42 @@ async def test_get_all_orders_200(client : AsyncClient, verify_creator, admin_se
     mock_product_repo.get_all.return_value = [fake_order]
     response = await client.get('/admin/orders')
     assert response.status_code == 200
+
+async def test_statistics_200(client : AsyncClient, verify_creator,mock_redis, admin_service):
+    mock_redis.scard.return_value = 5
+    response = await client.get('/admin/statistics')
+    assert response.status_code == 200
+async def test_statistics_403(client : AsyncClient, verify_user,mock_redis, admin_service):
+    mock_redis.scard.return_value = 5
+    response = await client.get('/admin/statistics')
+    assert response.status_code == 403
+async def test_statistics_401(client : AsyncClient,mock_redis, admin_service):
+    mock_redis.scard.return_value = 5
+    response = await client.get('/admin/statistics')
+    assert response.status_code == 401
+
+async def test_user_unban_200(client: AsyncClient, verify_creator, admin_service, mock_user_repo, fake_user):
+    mock_user_repo.get_by_id.return_value = fake_user
+    mock_user_repo.update.return_value = fake_user
+    response = await client.patch('/admin/users/10/unban')
+    assert response.status_code == 200
+async def test_user_unban_401(client: AsyncClient, admin_service, mock_user_repo, fake_user):
+    mock_user_repo.get_by_id.return_value = fake_user
+    mock_user_repo.update.return_value = fake_user
+    response = await client.patch('/admin/users/10/unban')
+    assert response.status_code == 401
+async def test_user_unban_403(client: AsyncClient, verify_user, admin_service, mock_user_repo, fake_user):
+    mock_user_repo.get_by_id.return_value = fake_user
+    mock_user_repo.update.return_value = fake_user
+    response = await client.patch('/admin/users/10/unban')
+    assert response.status_code == 403
+async def test_user_unban_400(client: AsyncClient, verify_creator, admin_service, mock_user_repo, fake_user):
+    mock_user_repo.get_by_id.return_value = fake_user
+    mock_user_repo.update.return_value = fake_user
+    response = await client.patch('/admin/users/5/unban')
+    assert response.status_code == 400
+async def test_user_unban_404(client: AsyncClient, verify_creator, admin_service, mock_user_repo, fake_user):
+    mock_user_repo.get_by_id.return_value = None
+    mock_user_repo.update.return_value = fake_user
+    response = await client.patch('/admin/users/10/unban')
+    assert response.status_code == 404

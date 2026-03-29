@@ -35,9 +35,18 @@ async def test_login_401_2(client, mock_user_repo, user_service, fake_user_for_l
         response = await client.post('/auth/login', json=data)
         assert response.status_code == 401
 
-async def test_login_409(client, mock_user_repo, user_service,fake_user_banned):
+async def test_login_401(client, mock_user_repo, user_service,fake_user_banned):
     mock_user_repo.get_by_email.return_value = fake_user_banned
     data = {'email' : 'alex@test.com', 'password': 'pass'}
     response = await client.post('/auth/login', json=data)
-    assert response.status_code == 409
+    assert response.status_code == 401
+
+async def test_logout_200(client, verify_user,fake_user):
+    response = await client.post('/auth/logout')
+    assert response.status_code == 200
+async def test_logout_401(client,fake_user):
+    response = await client.post('/auth/logout')
+    assert response.status_code == 401
+
+
 

@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 import pytest
 import pytest_asyncio
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from httpx import AsyncClient, ASGITransport
 from datetime import datetime, timezone
 from main import app
@@ -13,6 +13,7 @@ from services.user_service import UserService
 from services.product_service import ProductService
 from services.order_service import OrderService
 from services.admin_service import AdminService
+from services.redis_service import redis_service
 from repositories.user_repo import UserRepository
 from repositories.product_repo import ProductRepository
 from repositories.order_repo import OrderRepository
@@ -188,3 +189,16 @@ def fake_target_user():
     user.updated_at = None
     user.orders = []
     return user
+@pytest_asyncio.fixture(autouse=True)
+async def mock_redis():
+    mock_client = AsyncMock()
+    mock_client.sismember = AsyncMock(return_value=False)
+    mock_client.get = AsyncMock(return_value=None)
+    mock_client.zremrangebyscore = AsyncMock()
+    mock_client.zadd = AsyncMock()
+    mock_client.zcard = AsyncMock(return_value=0)
+    mock_client.sadd = AsyncMock()
+    mock_client.expireat = AsyncMock()
+    
+    with patch.object(redis_service, 'redis_client', mock_client):
+        yield mock_client
