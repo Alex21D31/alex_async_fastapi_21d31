@@ -16,11 +16,6 @@ class AdminService:
         if not user:
             raise HTTPException(status_code=404, detail='Пользователь не найден')
         return user
-    async def _get_order_or_404(self, order_id: int) -> Order:
-        order = await self.order_repo.get_by_id(order_id)
-        if not order:
-            raise HTTPException(status_code=404, detail='Продукт не найден')
-        return order
     async def get_all_users(self):
         return  await self.user_repo.get_all()
     async def get_user_by_id(self, id : int):
@@ -52,9 +47,6 @@ class AdminService:
         return {'detail' : f'Пользователь {id} успешно разблокирован'}
     async def get_all_orders(self):
         return await self.order_repo.get_all()
-    async def update_order_status(self, order_id : int, new_status : Status):
-        order = await self._get_order_or_404(order_id)
-        return await self.order_repo.update(order, {'status' : new_status})
     async def get_statistics(self):
         today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
         count = await redis_service.get_active_users_count(today)

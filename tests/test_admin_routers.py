@@ -64,6 +64,11 @@ async def test_user_ban_401(client : AsyncClient, admin_service, mock_user_repo,
     mock_user_repo.update.return_value = fake_target_user
     response = await client.patch('/admin/users/10/ban')
     assert response.status_code == 401
+async def test_user_ban_admin_bans_admin_403(client: AsyncClient, verify_admin, admin_service, mock_user_repo, fake_target_user):
+    fake_target_user.role.value = 'admin'
+    mock_user_repo.get_by_id.return_value = fake_target_user
+    response = await client.patch('/admin/users/10/ban')
+    assert response.status_code == 403
 async def test_user_ban_400(client : AsyncClient, verify_admin, admin_service, mock_user_repo, fake_target_user):
     mock_user_repo.get_by_id.return_value = fake_target_user
     mock_user_repo.update.return_value = fake_target_user
@@ -74,6 +79,12 @@ async def test_user_ban_404(client : AsyncClient, verify_admin, admin_service, m
     mock_user_repo.update.return_value = fake_target_user
     response = await client.patch('/admin/users/10/ban')
     assert response.status_code == 404
+async def test_user_ban_redis_error_200(client: AsyncClient, verify_creator, admin_service, mock_user_repo, mock_redis, fake_user):
+    mock_user_repo.get_by_id.return_value = fake_user
+    mock_user_repo.update.return_value = fake_user
+    mock_redis.sadd.side_effect = Exception("Redis недоступен")
+    response = await client.patch('/admin/users/10/ban')
+    assert response.status_code == 200
 
 async def test_get_all_orders_200(client : AsyncClient, verify_creator, admin_service, mock_product_repo, fake_order):
     mock_product_repo.get_all.return_value = [fake_order]
@@ -118,3 +129,9 @@ async def test_user_unban_404(client: AsyncClient, verify_creator, admin_service
     mock_user_repo.update.return_value = fake_user
     response = await client.patch('/admin/users/10/unban')
     assert response.status_code == 404
+async def test_user_unban_redis_error_200(client: AsyncClient, verify_creator, admin_service, mock_user_repo, mock_redis, fake_user):
+    mock_user_repo.get_by_id.return_value = fake_user
+    mock_user_repo.update.return_value = fake_user
+    mock_redis.srem.side_effect = Exception("Redis недоступен")
+    response = await client.patch('/admin/users/10/unban')
+    assert response.status_code == 200
