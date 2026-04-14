@@ -202,3 +202,9 @@ async def mock_redis():
     
     with patch.object(redis_service, 'redis_client', mock_client):
         yield mock_client
+
+@pytest.fixture(autouse=True)
+def mock_celery_task():
+    with patch('services.user_service.send_welcome_email') as mock:
+        mock.delay = MagicMock()
+        yield mock

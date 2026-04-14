@@ -35,9 +35,6 @@ services:
       - shop_network
   app:
     build: "."
-    container_name: shop_app
-    ports:
-      - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -45,6 +42,32 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    networks:
+      - shop_network
+    deploy:
+      replicas: 2
+  celery_worker:
+    build: "."
+    container_name: shop_worker
+    command: sh -c "PYTHONPATH=. celery -A celery_app:celery_instance worker --loglevel=info"
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    networks:
+      - shop_network
+  nginx:
+    image: nginx:alpine
+    container_name: shop_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
     networks:
       - shop_network
 volumes:

@@ -3,6 +3,7 @@ from auth import hash_password, verify_password, create_access_token,create_refr
 from services.redis_service import redis_service
 from datetime import datetime,timezone
 from schemas import CreateUser, UpdateUser, UpdatePassword
+from tasks import send_welcome_email, change_password_email
 from models import User, Role
 from fastapi import HTTPException
 import logging
@@ -21,6 +22,7 @@ class UserService:
             email = data.email,
             password = hash_password(data.password)
         )
+        send_welcome_email.delay(user.email)
         return await self.repo.save(user)
     async def _get_user_or_404(self, user_id: int) -> User:
         user = await self.repo.get_by_id(int(user_id))
@@ -67,6 +69,7 @@ class UserService:
             raise HTTPException(status_code=403, detail='Пароль неверный.')
         new_pass = hash_password(passwords.new_password)
         user.password = new_pass
+        change_password_email.delay(user.email)
         await self.repo.save(user)
         return "Ваш пароль успешно изменен."
     async def delete(self, password : str,  data : dict) -> str:

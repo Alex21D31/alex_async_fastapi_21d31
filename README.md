@@ -52,9 +52,9 @@ Testing: `Pytest` + `Pytest-asyncio` + `Pytest-cov`
 
 Проект полностью покрыт автоматизированными тестами, что гарантирует стабильность при внесении изменений.
 
-**Покрытие (Coverage):** 100%
-**Количество тестов:** 81 сценарий (Unit & Functional).
-**Методология:** Тестирование логики сервисов и роутеров через моки репозиториев (`AsyncMock`).
+**Покрытие (Coverage):** 100% по роутерам, 97% по сервисам.
+**Количество тестов:** 86 сценариев (Unit & Functional).
+**Методология:** Тестирование роутеров через моки сервисов и репозиториев (`AsyncMock`).
 **Именование:** Использован интуитивный стандарт `test_функционал_expected-status-code` (например, `test_register_409`).
 
 ## Запуск тестов с отчетом о покрытии
@@ -92,3 +92,28 @@ pytest tests --cov=routers --cov=services -s
 ```
 
 *Приложение будет доступно по адресу `http://localhost:8000`. Интерактивная документация Swagger: `/docs`.*
+
+## Структура проекта
+```
+SHOP_PROJECT/
+├── alembic/           # Миграции базы данных
+├── repositories/      # Слой доступа к данным (CRUD)
+├── routers/           # API эндпоинты
+├── services/          # Бизнес-логика
+├── tests/             # Автоматизированные тесты
+├── auth.py            # JWT аутентификация
+├── celery_app.py      # Celery воркер
+├── config.py          # Конфигурация приложения
+├── database.py        # Подключение к БД
+├── decorators.py      # Кастомные декораторы (RBAC)
+├── dependencies.py    # Dependency Injection
+├── middleware.py      # Логирование запросов
+├── models.py          # SQLAlchemy модели
+├── schemas.py         # Pydantic схемы
+├── tasks.py           # Celery задачи
+├── docker-compose.yaml
+├── Dockerfile
+├── requirements.txt
+├── .env.example
+└── main.py            # Точка входа
+```
