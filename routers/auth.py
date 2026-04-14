@@ -3,7 +3,17 @@ from schemas import CreateUser, OutUser,UserLogin
 from services.user_service import UserService
 from dependencies import get_user_service
 from auth import verify_token
+from fastapi import Request
 router = APIRouter(prefix='/auth', tags=['auth'])
+@router.get("/health", include_in_schema=False)
+async def health_check():
+    return {"status": "ok"}
+@router.get("/debug-headers")
+async def debug_headers(request: Request):
+    return {
+        "client_host": request.client.host,
+        "headers": dict(request.headers),
+    }
 @router.post('/register', response_model=OutUser)
 async def register(data : CreateUser, service : UserService = Depends(get_user_service)):
     return await service.register(data)
