@@ -1,10 +1,14 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, MagicMock
 from httpx import AsyncClient
 
-async def test_create_order_200(client: AsyncClient, mock_order_repo, order_service, verify_user, fake_product, fake_order, mock_refresh):
+@patch('services.order_service.send_order_event')
+async def test_create_order_200(mock_kafka,client: AsyncClient, mock_order_repo, order_service, verify_user, fake_product, fake_order, mock_refresh):
     mock_order_repo.save.return_value = fake_order
     order_service.product_repo.get_by_id.return_value = fake_product
     order_service.db.refresh = mock_refresh
+    mock_result = MagicMock()
+    mock_result.scalar_one.return_value = fake_order
+    order_service.db.execute = AsyncMock(return_value=mock_result)
     response = await client.post('/orders', json={'info': 'test', 'items': [{'product_id': 1, 'quantity': 1}]})
     assert response.status_code == 200
 async def test_create_order_404(client: AsyncClient, mock_order_repo, order_service, verify_user, fake_product, fake_order, mock_refresh):

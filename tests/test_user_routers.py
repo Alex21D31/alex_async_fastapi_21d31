@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 from httpx import AsyncClient
 
 async def test_get_me_200(client : AsyncClient, fake_user, mock_user_repo, verify_user, user_service):
@@ -36,7 +36,8 @@ async def test_update_me_401(client : AsyncClient, fake_user, mock_user_repo, us
         response = await client.patch('/users/me', json={'name' : 'alex', 'phone' : '13891631768', 'email' : 'eiq@.eq'}, headers={'x-password' : 'old_pass'})
         assert response.status_code == 401 
 
-async def test_update_password_200(client : AsyncClient, fake_user, verify_user,mock_user_repo, user_service):
+@patch('services.user_service.change_password_email.delay')
+async def test_update_password_200(mock_kafka,client : AsyncClient, fake_user, verify_user,mock_user_repo, user_service):
     mock_user_repo.save.return_value = fake_user
     with patch('services.user_service.verify_password', return_value = True):
         with patch('services.user_service.hash_password', return_value = 'hash_password'):
