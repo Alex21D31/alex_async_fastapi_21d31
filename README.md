@@ -112,24 +112,27 @@ pytest tests --cov=routers --cov=services -s
 ## Структура проекта
 ```
 SHOP_PROJECT/
-├── alembic/           # Миграции базы данных
-├── repositories/      # Слой доступа к данным (CRUD)
-├── routers/           # API эндпоинты
-├── services/          # Бизнес-логика
-├── tests/             # Автоматизированные тесты
-├── auth.py            # JWT аутентификация
-├── celery_app.py      # Celery воркер
-├── config.py          # Конфигурация приложения
-├── database.py        # Подключение к БД
-├── decorators.py      # Кастомные декораторы (RBAC)
-├── dependencies.py    # Dependency Injection
-├── middleware.py      # Логирование запросов
-├── models.py          # SQLAlchemy модели
-├── schemas.py         # Pydantic схемы
-├── tasks.py           # Celery задачи
-├── docker-compose.yaml
-├── Dockerfile
-├── requirements.txt
-├── .env.example
-└── main.py            # Точка входа
+├── alembic/            # Миграции базы данных
+├── celery_utils/       # Настройки Celery и фоновые задачи
+├── kafka_utils/        # Продюсеры и консюмеры для работы с Kafka
+├── repositories/       # Слой работы с БД (CRUD операции)
+├── routers/            # Эндпоинты API
+├── services/           # Ядро системы (бизнес-логика)
+├── tests/              # Юнит и функциональные тесты
+├── auth.py             # Логика аутентификации и JWT
+├── config.py           # Управление настройками и .env
+├── database.py         # Настройка асинхронного движка БД
+├── decorators.py       # Кастомные декораторы (права доступа)
+├── dependencies.py     # Инъекция зависимостей
+├── docker-compose.yaml # Конфигурация всей инфраструктуры
+├── dockerfile          # Инструкции по сборке образа приложения
+├── main.py             # Точка входа в FastAPI приложение
+├── middleware.py       # Логирование и обработка запросов
+├── models.py           # Описание таблиц базы данных
+├── nginx.conf          # Конфигурация прокси-сервера и балансировщика
+├── pytest.ini          # Настройки тестового фреймворка
+├── README.md           # Документация проекта
+├── requirements.txt    # Список библиотек
+├── sandbox.py          # Песочница для экспериментов с кодом
+└── schemas.py          # Pydantic модели (валидация данных)
 ```
