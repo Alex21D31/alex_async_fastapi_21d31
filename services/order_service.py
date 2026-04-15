@@ -4,6 +4,9 @@ from schemas import CreateOrder, UpdateOrder
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from models import Order, OrderItem, Status
+from kafka_utils.producer import send_order_event
+from sqlalchemy.orm import selectinload
+from sqlalchemy import select
 
 class OrderService:
     def __init__(self,order_repo: OrderRepository, product_repo: ProductRepository, db: AsyncSession):
@@ -19,6 +22,9 @@ class OrderService:
         order = Order(user_id=user_id, info=data.info)
         self.db.add(order)
         await self.db.flush()
+
+        kafka_items = []
+
         for item in data.items:
             product = await self.product_repo.get_by_id(item.product_id)
             if not product:
@@ -26,6 +32,11 @@ class OrderService:
             if product.quantity < item.quantity:
                 raise HTTPException(400, f'Недостаточно товара {product.name} на складе')
             product.quantity -= item.quantity
+            kafka_items.append({
+                'product_id' : product.id,
+                'name' : product.name,
+                'quantity' : item.quantity
+            })
             order_item = OrderItem(
                 order_id=order.id,
                 product_id=item.product_id,
@@ -33,7 +44,20 @@ class OrderService:
             )
             self.db.add(order_item)
         await self.db.commit()
-        await self.db.refresh(order)
+        query = (
+            select(Order)
+            .where(Order.id == order.id)
+            .options(
+                selectinload(Order.items).selectinload(OrderItem.product)
+            )
+        )
+        result = await self.db.execute(query)
+        order = result.scalar_one()
+        await send_order_event(
+            order_id = order.id,
+            user_id = user_id,
+            items = kafka_items
+        )
         return order
     async def get_all_orders(self, data : dict):
         result = await self.order_repo.get_all_orders_by_user(int(data['sub']))

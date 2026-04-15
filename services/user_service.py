@@ -3,7 +3,7 @@ from auth import hash_password, verify_password, create_access_token,create_refr
 from services.redis_service import redis_service
 from datetime import datetime,timezone
 from schemas import CreateUser, UpdateUser, UpdatePassword
-from tasks import send_welcome_email, change_password_email
+from celery_utils.tasks import send_welcome_email, change_password_email
 from models import User, Role
 from fastapi import HTTPException
 import logging

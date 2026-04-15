@@ -35,12 +35,16 @@ services:
       - shop_network
   app:
     build: "."
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+    environment:
+      - PYTHONPATH=.
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      kafka:
+        condition: service_started
     env_file:
       - .env
     networks:
@@ -48,15 +52,17 @@ services:
     deploy:
       replicas: 2
     healthcheck:
-      test: ["CMD", "python", "-c", "import urlib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
-      interval: 10s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/auth/health')"]
+      interval: 60s
       timeout: 5s
-      retries: 5
+      retries: 3
       start_period: 10s
   celery_worker:
     build: "."
     container_name: shop_worker
-    command: sh -c "PYTHONPATH=. celery -A celery_app:celery_instance worker --loglevel=info"
+    command: ["celery", "-A", "celery_utils.celery_app.celery_instance", "worker", "--loglevel=info"]
+    environment:
+      - PYTHONPATH=.
     depends_on:
       redis:
         condition: service_healthy
@@ -77,6 +83,56 @@ services:
       - app
     networks:
       - shop_network
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: shop_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - shop_network
+    
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: shop_kafka
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "29092:29092"
+    networks:
+      - shop_network
+
+  kafka_consumer:
+    build: "."
+    container_name: shop_kafka_consumer
+    command: sh -c "sleep 5 && PYTHONPATH=. python kafka_utils/consumer.py"
+    restart: on-failure
+    depends_on:
+      kafka:
+        condition: service_healthy
+      db:
+        condition: service_started
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    networks:
+      - shop_network
+
 volumes:
   postgres_data:
   redis_data:

@@ -9,5 +9,6 @@ class Settings(BaseSettings):
     DB_NAME: str
     REDIS_HOST: str
     REDIS_PORT: int
+    KAFKA_BOOTSTRAP_SERVERS: str
     model_config = {"env_file": ".env"}
 settings = Settings()  
