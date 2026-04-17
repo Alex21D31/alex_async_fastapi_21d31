@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+from unittest.mock import AsyncMock, patch
+>>>>>>> 9a6d543d271946507bba8153ad597799c193f0c5
 from models import Role
 from httpx import AsyncClient
 
