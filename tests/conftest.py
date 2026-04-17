@@ -14,6 +14,7 @@ from services.product_service import ProductService
 from services.order_service import OrderService
 from services.admin_service import AdminService
 from services.redis_service import redis_service
+from kafka_utils.producer import get_producer
 from repositories.user_repo import UserRepository
 from repositories.product_repo import ProductRepository
 from repositories.order_repo import OrderRepository
@@ -207,4 +208,16 @@ async def mock_redis():
 def mock_celery_task():
     with patch('services.user_service.send_welcome_email') as mock:
         mock.delay = MagicMock()
+        yield mock
+@pytest.fixture(autouse=True)
+def mock_kafka_producer():
+    mock_producer = AsyncMock()
+    app.state.producer = mock_producer
+    app.dependency_overrides[get_producer] = lambda: mock_producer
+    yield mock_producer
+    app.dependency_overrides.pop(get_producer, None)
+@pytest.fixture(autouse=True)
+def mock_send_order_event():
+    with patch('services.order_service.send_order_event') as mock:
+        mock.return_value = AsyncMock()
         yield mock

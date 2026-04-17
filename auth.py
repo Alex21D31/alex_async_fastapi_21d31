@@ -14,15 +14,57 @@ ALGORITHM = settings.ALGORITHM
 SECRET_KEY = settings.SECRET_KEY
 pwd_context = CryptContext(schemes=['bcrypt'])
 def hash_password(password : str) -> str:
+    """
+    Хеширует пароль с помощью bcrypt.
+
+    Args:
+        password: Пароль в открытом виде.
+
+    Returns:
+        Хеш пароля.
+    """
     return pwd_context.hash(password)
 def verify_password(password : str, hashed : str) -> bool:
+    """
+    Сравнивает пароль пользователя с хешем из базы данных.
+
+    Args:
+        password: Пароль в открытом виде.
+        hashed: Хеш пароля из базы данных.
+
+    Returns:
+        True если пароль верный, False если нет.
+    """
     return pwd_context.verify(password,hashed)
-def change_password(passwords : dict, hash : str) -> str:
-    if not verify_password(passwords['old_password'],hash):
+def change_password(passwords : dict, hashed_password : str) -> str:
+    """
+    Изменяет пароль пользователя.
+
+    Args:
+        passwords: Словарь с ключами old_password и new_password.
+        hash: Хеш текущего пароля из базы данных.
+
+    Returns:
+        Хеш нового пароля.
+
+    Raises:
+        HTTPException 403: если старый пароль неверный.
+    """
+    if not verify_password(passwords['old_password'],hashed_password):
         raise HTTPException(status_code=403, detail='Неверный пароль')
     new_pass = hash_password(passwords['new_password'])
     return new_pass
 def create_access_token(data : dict) -> str:
+    """
+    Создаёт JWT access токен для аутентификации пользователя.
+
+    Args:
+        data: словарь с данными пользователя (id, email, role).
+
+    Returns:
+        подписанный JWT access токен со сроком жизни 30 минут,
+        содержит уникальный идентификатор jti для возможности инвалидации.
+    """
     info = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=LIVE_TIME)
     uid = str(uuid.uuid4())
@@ -37,6 +79,16 @@ def create_access_token(data : dict) -> str:
     token=jwt.encode(token_data,SECRET_KEY,algorithm=ALGORITHM)
     return token
 def create_refresh_token(data : dict) -> str:
+    """
+    Создаёт JWT refresh токен для получения новых access токенов.
+
+    Args:
+        data: Словарь с данными пользователя (id, email, role).
+
+    Returns:
+        Подписанный JWT refresh токен со сроком жизни 30 дней,
+        содержит уникальный идентификатор jti для возможности инвалидации.
+    """
     info = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(days=30)
     uid = str(uuid.uuid4())
@@ -50,8 +102,22 @@ def create_refresh_token(data : dict) -> str:
     }
     token=jwt.encode(token_data,SECRET_KEY,algorithm=ALGORITHM)
     return token
-async def verify_token(credintals : HTTPAuthorizationCredentials = Depends(security)) -> dict:
-    token = credintals.credentials
+async def verify_token(credentials : HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """
+    Верифицирует JWT access токен и проверяет права доступа пользователя.
+    Для проверки бана и аннулирования токена обращается к Redis.
+
+    Args:
+        credintals: Bearer токен из заголовка Authorization
+
+    Returns:
+        Словарь с данными пользователя (id, email, role, jti)
+
+    Raises:
+        HTTPException 401: если токен истёк, невалидный или аннулирован
+        HTTPException 401: если аккаунт пользователя заблокирован
+    """
+    token = credentials.credentials
     try:
         data = jwt.decode(token, SECRET_KEY,algorithms=[ALGORITHM])
         jti = data.get('jti')

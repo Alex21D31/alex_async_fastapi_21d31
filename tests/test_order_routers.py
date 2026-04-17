@@ -1,8 +1,7 @@
 from unittest.mock import AsyncMock, patch, MagicMock
 from httpx import AsyncClient
 
-@patch('services.order_service.send_order_event')
-async def test_create_order_200(mock_kafka,client: AsyncClient, mock_order_repo, order_service, verify_user, fake_product, fake_order, mock_refresh):
+async def test_create_order_200(client: AsyncClient, mock_order_repo, order_service, verify_user, fake_product, fake_order, mock_refresh):
     mock_order_repo.save.return_value = fake_order
     order_service.product_repo.get_by_id.return_value = fake_product
     order_service.db.refresh = mock_refresh
