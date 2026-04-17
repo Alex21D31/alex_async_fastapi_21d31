@@ -3,7 +3,7 @@ from schemas import CreateUser, OutUser,UserLogin
 from services.user_service import UserService
 from dependencies import get_user_service
 from auth import verify_token
-from fastapi import Request
+
 router = APIRouter(prefix='/auth', tags=['auth'])
 @router.get("/health", include_in_schema=False)
 async def health_check():

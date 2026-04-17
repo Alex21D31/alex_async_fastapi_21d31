@@ -1,4 +1,3 @@
-from unittest.mock import AsyncMock, patch
 from models import Role
 from httpx import AsyncClient
 

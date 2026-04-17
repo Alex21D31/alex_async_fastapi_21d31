@@ -2,7 +2,7 @@ from repositories.order_repo import OrderRepository
 from repositories.user_repo import UserRepository
 from services.redis_service import redis_service
 from fastapi import HTTPException
-from models import User, Role, Status, Order
+from models import User, Role
 from datetime import datetime, timezone
 import logging
 logger = logging.getLogger(__name__)
