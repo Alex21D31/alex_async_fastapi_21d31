@@ -7,21 +7,27 @@ from fastapi import Request
 router = APIRouter(prefix='/auth', tags=['auth'])
 @router.get("/health", include_in_schema=False)
 async def health_check():
+    """
+    Проверка сервера на работоспособность, не является эндпоинтом.
+    """
     return {"status": "ok"}
-@router.get("/debug-headers")
-async def debug_headers(request: Request):
-    return {
-        "client_host": request.client.host,
-        "headers": dict(request.headers),
-    }
 @router.post('/register', response_model=OutUser)
 async def register(data : CreateUser, service : UserService = Depends(get_user_service)):
+    """
+    Регистрация нового пользователя в системе.
+    """
     return await service.register(data)
 @router.post('/login')
 async def login(data : UserLogin, service : UserService = Depends(get_user_service)):
+    """
+    Аутентификация пользователя в системе. Получение токена
+    """
     return await service.login(data.email, data.password)
 @router.post('/logout')
 async def logout(token_data : dict = Depends(verify_token), service : UserService = Depends(get_user_service)):
+    """
+    Выход пользователя из системы. Отзыв токена
+    """
     await service.logout_user(token_data)
     return {'detail' : 'Successfully logged out'}
 

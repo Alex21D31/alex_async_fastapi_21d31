@@ -15,6 +15,9 @@ WINDOW = 30
 
 class LogMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request : Request, call_next):
+        """
+        Логирование входящих запросов и ответов.
+        """
         logger.info(f'-> {request.method} {request.url}')
         response = await call_next(request)
         if response.status_code >= 400:
@@ -24,6 +27,9 @@ class LogMiddleware(BaseHTTPMiddleware):
         return response
 class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        """
+        Ограничение частоты запросов по IP-адресу (RATE LIMITING).
+        """
         if any(request.url.path.startswith(path) for path in EXCLUDED_PATHS):
             return await call_next(request)
         ip = request.client.host

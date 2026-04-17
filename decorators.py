@@ -1,6 +1,9 @@
 from fastapi import HTTPException
 from functools import wraps
 def require_role(*roles):
+    """
+    Декоратор для ограничения доступа к эндпоинту по ролям.
+    """
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
