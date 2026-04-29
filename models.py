@@ -18,6 +18,10 @@ class TaskStage (enum.Enum):
     processing = 'processing'
     shipping = 'shipping'
     delivered = 'delivered'
+class ActionType(enum.Enum):
+    create = 'create'
+    update = 'update'
+    delete = 'delete'
 class ApplicationStatus(enum.Enum):
     pending = 'pending'
     approved = 'approved'
@@ -94,5 +98,12 @@ class SellerApplication(Base):
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
     user_id : Mapped[int] = mapped_column(ForeignKey('users.id'))
     reviewed_by : Mapped[int | None] = mapped_column(ForeignKey('users.id'), nullable=True, default=None)
-
- 
+class ModerationRequest(Base):
+    __tablename__ = 'mod_requests'
+    id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    action_type : Mapped[str] = mapped_column(Enum(ActionType), nullable=False)
+    status : Mapped[str] = mapped_column(Enum(ApplicationStatus), default=Status.pending)
+    entity_id : Mapped[int] = mapped_column(nullable=False)
+    created_at : Mapped[datetime] = mapped_column(server_default=func.now())
+    shop_id : Mapped[int] = mapped_column(ForeignKey('shops.id'))
+    reviewed_by : Mapped[int | None] = mapped_column(ForeignKey('users.id'), nullable=True, default=None)
