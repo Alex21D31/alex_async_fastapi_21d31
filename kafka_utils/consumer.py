@@ -20,7 +20,7 @@ async def start_order_consumer():
     
     try:
         async for msg in consumer:
-            # Извлченени данных из сообщения.
+            # Извлечение данных из сообщения.
             order_data = msg.value
             print(f" Получен заказ: {order_data['order_id']}")
             # Передача задачи для отправки в Celery.

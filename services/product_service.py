@@ -37,7 +37,7 @@ class ProductService():
             HTTPException: 404, если продукт не найден (через _get_prod_or_404).
         """
         return await self._get_prod_or_404(id)
-    async def create(self, prod : CreateProduct) -> dict:
+    async def create(self, prod : CreateProduct, user_data : dict) -> dict:
         """
         Создание нового продукта.
         Функция доступна только для ролей Admin и выше.
