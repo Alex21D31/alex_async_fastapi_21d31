@@ -1,65 +1,50 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 from datetime import datetime
 from models import Status
 class BaseSchema(BaseModel):
     model_config = {'from_attributes': True}
 class CreateUser(BaseModel):
-    name : str
-    phone : str
+    username : str
     email : str
     password : str
 class CreateProduct(BaseModel):
     name : str
     description : str | None = None
-    price : int
-    quantity : int
 class OutProduct(BaseSchema):
-    id : int
     name : str
     description : str | None = None
-    price : int
-    quantity : int
+    category : str
     created_at : datetime
-    updated_at: datetime | None = None
 class OrderItemCreate(BaseModel):
-    product_id : int
+    product_name : str
     quantity : int
 class OutOrderItem(BaseSchema):
-    product_id: int
+    product_name: str
     quantity: int
     product: OutProduct
 class CreateOrder(BaseModel):
     info : str | None = None
     items : list[OrderItemCreate]
 class OutOrder(BaseSchema):
-    id : int
     info : str | None = None
     created_at : datetime
-    updated_at: datetime | None = None
     status : str
-    user_id : int
+    owner_name : str
     items : list[OutOrderItem]
 class OutUser(BaseSchema):
-    id : int
-    name : str
-    phone : str
+    username : str
     email : str
     role : str
     created_at : datetime
-    updated_at: datetime | None = None
-    orders : list[OutOrder]
 class UpdatePassword(BaseModel):
     old_password : str
     new_password : str
 class UpdateUser(BaseModel):
-    name : str | None = None
-    phone : str | None = None
+    username : str | None = None
     email : str | None = None
 class UpdateProduct(BaseModel):
     name : str | None = None
     description : str | None = None
-    price : int | None = None
-    quantity : int | None = None
 class UpdateOrder(BaseModel):
     info : str | None = None
 class UpdateStatus(BaseModel):
@@ -67,3 +52,73 @@ class UpdateStatus(BaseModel):
 class UserLogin(BaseModel):
     email : str
     password : str
+class CreateCategory(BaseModel):
+    name : str
+    description : str | None = None
+class OutCategory(BaseSchema):
+    id : int
+    name : str
+    description : str | None = None
+class CreateShop(BaseModel):
+    name : str
+    description : str | None = None
+class OutShop(BaseSchema):
+    name : str
+    is_verified : bool
+    created_at : datetime
+    @computed_field
+    @property
+    def seller_name(self) -> str:
+        return self.seller.username
+class UpdateShop(BaseModel):
+    name : str | None = None
+    description : str | None = None
+class CreateShopProduct(BaseModel):
+    product_name : str
+    shop_name : str
+    quantity : int
+    price : int
+    category_name : str
+class OutShopProduct(BaseSchema):
+    quantity : int
+    price : int
+    @computed_field
+    @property
+    def product_name(self) -> str:
+        return self.product.name
+    @computed_field
+    @property
+    def shop_name(self) -> str:
+        return self.shop.name
+    @computed_field
+    @property
+    def category_name(self) -> str:
+        return self.category.name
+class UpdateShopProduct(BaseModel):
+    quantity : int
+    price : int
+class CreateSellerApplication(BaseModel):
+    text : str
+class OutSellerApplication(BaseSchema):
+    text: str
+    status: str
+    created_at: datetime
+    @computed_field
+    @property
+    def user_name(self) -> str:
+        return self.user.username
+    @computed_field
+    @property
+    def reviewer_name(self) -> str | None:
+        return self.reviewer.username if self.reviewer else None
+class OutModerationRequest(BaseSchema):
+    status: str
+    created_at: datetime
+    @computed_field
+    @property
+    def shop_name(self) -> str:
+        return self.shop.name
+    @computed_field
+    @property
+    def reviewer_name(self) -> str | None:
+        return self.reviewer.username if self.reviewer else None

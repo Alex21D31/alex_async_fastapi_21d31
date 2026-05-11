@@ -68,7 +68,6 @@ class OrderItem(Base):
     quantity : Mapped[int]
     order : Mapped['Order'] = relationship('Order', back_populates='items')
     product : Mapped['Product'] = relationship('Product', back_populates='items',lazy='selectin')
-
 class Category(Base):
     __tablename__ = 'categories'
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -83,6 +82,7 @@ class Shop(Base):
     name : Mapped[str] = mapped_column(unique=True)
     description : Mapped[str | None]
     seller_id : Mapped[int] = mapped_column(ForeignKey('users.id'))
+    seller : Mapped['User'] = relationship('User', lazy='selectin')
     is_verified : Mapped[bool] = mapped_column(default=False)
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
 class ShopProduct(Base):
@@ -93,6 +93,9 @@ class ShopProduct(Base):
     shop_id : Mapped[int] = mapped_column(ForeignKey('shops.id'))
     product_id : Mapped[int] = mapped_column(ForeignKey('products.id'))
     category_id : Mapped[int] = mapped_column(ForeignKey('categories.id'))
+    shop : Mapped['Shop'] = relationship('Shop', lazy='selectin')
+    product : Mapped['Product'] = relationship('Product', lazy='selectin')
+    category : Mapped['Category'] = relationship('Category', lazy='selectin')
 class SellerApplication(Base):
     __tablename__ = 'sellerapplications'
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -101,6 +104,8 @@ class SellerApplication(Base):
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
     user_id : Mapped[int] = mapped_column(ForeignKey('users.id'))
     reviewed_by : Mapped[int | None] = mapped_column(ForeignKey('users.id'), default=None)
+    user : Mapped['User'] = relationship('User', foreign_keys=[user_id], lazy='selectin')
+    reviewer : Mapped['User | None'] = relationship('User', foreign_keys=[reviewed_by], lazy='selectin')
 class ModerationRequest(Base):
     __tablename__ = 'mod_requests'
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -108,3 +113,5 @@ class ModerationRequest(Base):
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
     shop_id : Mapped[int] = mapped_column(ForeignKey('shops.id'))
     reviewed_by : Mapped[int | None] = mapped_column(ForeignKey('users.id'), default=None)
+    shop : Mapped['Shop'] = relationship('Shop', lazy='selectin')
+    reviewer : Mapped['User | None'] = relationship('User', lazy='selectin')
