@@ -11,6 +11,9 @@ class ShopRepository:
     async def get_by_seller_id(self, seller_id : int) -> Shop | None:
         result = await self.db.execute(select(Shop).where(Shop.seller_id == seller_id))
         return result.scalar_one_or_none()
+    async def get_by_shop_name(self, shop_name : str) -> Shop | None:
+        result = await self.db.execute(select(Shop).where(Shop.name == shop_name))
+        return result.scalar_one_or_none()
     async def get_all_verified(self) -> list[Shop]:
         result = await self.db.execute(select(Shop).where(Shop.is_verified == True))
         return result.scalars().all()

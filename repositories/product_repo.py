@@ -62,7 +62,7 @@ class ProductRepository:
 
         Args:
             prod: Экземпляр модели Product, который подлежит изменению.
-            update_data: Словарь с новыми данными (name, description, price, quantity).
+            update_data: Словарь с новыми данными (name, description).
 
         Returns:
             Обновленный объект из базы данных с актуальной датой updated_at.

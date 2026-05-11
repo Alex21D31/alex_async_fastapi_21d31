@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from models import ShopProduct, Product
+from models import ShopProduct, Product, Shop
 
 class ShopProductRepository:
     def __init__(self, db : AsyncSession):
@@ -8,12 +8,12 @@ class ShopProductRepository:
     async def get_by_id(self, id : int) -> ShopProduct | None:
         result = await self.db.execute(select(ShopProduct).where(ShopProduct.id == id))
         return result.scalar_one_or_none()
-    async def get_by_shop_id(self, shop_id : int) -> list[ShopProduct] | None:
-        result = await self.db.execute(select(ShopProduct).where(ShopProduct.shop_id == shop_id))
-        return result.scalars().all()
-    async def get_by_product_name(self, name : str) -> ShopProduct | None:
+    async def get_by_product_name(self, name : str) -> list[ShopProduct] | None:
         result = await self.db.execute(select(ShopProduct).join(Product, ShopProduct.product_id == Product.id).where(Product.name == name))
-        return result.scalar_one_or_none()
+        return result.scalars().all()
+    async def get_all_products_by_shop(self, shop_name : str) -> list[ShopProduct]:
+        result = await self.db.execute(select(ShopProduct).join(Shop, ShopProduct.shop_id == Shop.id).where(Shop.name == shop_name))
+        return result.scalars().all()
     async def save(self, shop_product : ShopProduct) -> ShopProduct:
         self.db.add(shop_product)
         await self.db.commit()

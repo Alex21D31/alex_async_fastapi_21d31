@@ -27,31 +27,31 @@ class OrderRepository:
         """
         result = await self.db.execute(select(Order))
         return result.scalars().all()  
-    async def get_by_id_for_user(self, id : int, user_id : int) -> Order | None:
+    async def get_by_id_for_user(self, id : int, username : str) -> Order | None:
         """
         Поиск одного заказа для пользователя.
         Происходит путем поиска по заказу и пользователю. 
 
         Args:
             id: Айди заказа
-            user_id: Айди пользователя
+            username: Юзернейм пользователя
         
         Return:
             Заказ пользователя или None, если заказ не найден.
         """
-        result = await self.db.execute(select(Order).where(Order.id == id, Order.user_id == user_id).options(joinedload(Order.items).joinedload(OrderItem.product)))
+        result = await self.db.execute(select(Order).where(Order.id == id, Order.owner_name == username).options(joinedload(Order.items).joinedload(OrderItem.product)))
         return result.unique().scalar_one_or_none()
-    async def get_all_orders_by_user(self, user_id : int):
+    async def get_all_orders_by_user(self, username : str):
         """
         Поиск всех заказов одного пользователя
 
         Args:
-            user_id: Айди пользователя для поиска по базе.
+            username: Юзернейм пользователя для поиска по базе.
         
         Returns:
             Все заказы пользователя.
         """
-        result = await self.db.execute(select(Order).where(Order.user_id == user_id).options(joinedload(Order.items).joinedload(OrderItem.product)))
+        result = await self.db.execute(select(Order).where(Order.owner_name == username).options(joinedload(Order.items).joinedload(OrderItem.product)))
         return result.scalars().unique().all()
     async def save(self, order : Order) -> Order:
         """
@@ -89,11 +89,11 @@ class OrderRepository:
         await self.db.refresh(order)
         return order
     async def delete(self, order : Order) -> None:
-        await self.db.delete(order)
-        await self.db.commit()
         """
         Удаление заказа из базы данных.
 
         Args:
             prod: Экземпляр модели Order для удаления.
         """
+        await self.db.delete(order)
+        await self.db.commit()
