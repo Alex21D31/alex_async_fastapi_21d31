@@ -1,6 +1,6 @@
 from database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import func, Enum, ForeignKey
+from sqlalchemy import func, Enum, ForeignKey, Index
 from datetime import datetime
 import enum
 class Role(enum.Enum):
@@ -18,45 +18,44 @@ class TaskStage (enum.Enum):
     processing = 'processing'
     shipping = 'shipping'
     delivered = 'delivered'
-class ActionType(enum.Enum):
-    create = 'create'
-    update = 'update'
-    delete = 'delete'
 class ApplicationStatus(enum.Enum):
     pending = 'pending'
     approved = 'approved'
     rejected = 'rejected'
 class User(Base):
     __tablename__ = 'users'
+    __table_args__ = (
+        Index('ix_user_username', 'username', postgresql_using='hash'),
+        )
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name : Mapped[str] = mapped_column(nullable=False,unique=True)
-    phone : Mapped[str] = mapped_column(nullable=False,unique=True)
-    email : Mapped[str] = mapped_column(nullable=False,unique=True)
-    password : Mapped[str] = mapped_column(nullable=False)
+    username : Mapped[str] = mapped_column(unique=True)
+    email : Mapped[str] = mapped_column(unique=True)
+    password : Mapped[str]
     role : Mapped[str] = mapped_column(Enum(Role), default=Role.user)
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
-    updated_at : Mapped[datetime] = mapped_column(nullable=True,onupdate=func.now())
+    updated_at : Mapped[datetime | None] = mapped_column(onupdate=func.now())
     orders : Mapped[list['Order']] = relationship('Order', back_populates='user',lazy='selectin')
 class Product(Base):
     __tablename__ = 'products'
+    __table_args__ =(
+        Index('ix_product_name', 'name', postgresql_using='hash'),
+        )
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name : Mapped[str] = mapped_column(nullable=False,unique=True)
+    name : Mapped[str] = mapped_column(unique=True)
     description : Mapped[str | None]
-    price : Mapped[int] = mapped_column(nullable=False)
-    quantity : Mapped[int] = mapped_column(nullable=False)
-    category_id : Mapped[int | None] = mapped_column(ForeignKey('categories.id'), nullable=True)
+    category : Mapped[str] = mapped_column(ForeignKey('categories.name'))
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
-    updated_at : Mapped[datetime] = mapped_column(nullable=True,onupdate=func.now())
+    updated_at : Mapped[datetime | None] = mapped_column(onupdate=func.now())
     items : Mapped[list['OrderItem']] = relationship('OrderItem', back_populates='product', cascade='all, delete-orphan')
 class Order(Base):
     __tablename__ = 'orders'
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     info : Mapped[str | None]
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
-    updated_at : Mapped[datetime] = mapped_column(nullable=True,onupdate=func.now())
+    updated_at : Mapped[datetime | None] = mapped_column(onupdate=func.now())
     status : Mapped[str] = mapped_column(Enum(Status), default=Status.pending)
-    user_id : Mapped[int] = mapped_column(ForeignKey('users.id'))
-    task_id : Mapped[str | None] = mapped_column(nullable=True)
+    owner_name : Mapped[str] = mapped_column(ForeignKey('users.username'))
+    task_id : Mapped[str | None]
     task_stage : Mapped[str] = mapped_column(Enum(TaskStage),default=TaskStage.pending)
     user : Mapped['User'] = relationship('User', back_populates='orders')
     items : Mapped[list['OrderItem']] = relationship('OrderItem', back_populates='order',cascade='all, delete-orphan', lazy='selectin')
@@ -64,7 +63,8 @@ class OrderItem(Base):
     __tablename__ = 'orderitems'
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     order_id : Mapped[int] = mapped_column(ForeignKey('orders.id'))
-    product_id : Mapped[int] = mapped_column(ForeignKey('products.id'))
+    product_name : Mapped[str] = mapped_column(ForeignKey('products.name'))
+    shop_product_id : Mapped[int | None] = mapped_column(ForeignKey('shopproducts.id'))
     quantity : Mapped[int]
     order : Mapped['Order'] = relationship('Order', back_populates='items')
     product : Mapped['Product'] = relationship('Product', back_populates='items',lazy='selectin')
@@ -72,38 +72,39 @@ class OrderItem(Base):
 class Category(Base):
     __tablename__ = 'categories'
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name : Mapped[str] = mapped_column(nullable=False, unique=True)
-    description : Mapped[str | None] = mapped_column(nullable=True)
+    name : Mapped[str] = mapped_column(unique=True)
+    description : Mapped[str | None]
 class Shop(Base):
     __tablename__ =  'shops'
+    __table_args__ = (
+        Index('ix_shop_name', 'name', postgresql_using='hash'),
+    )
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name : Mapped[str] = mapped_column(nullable=False, unique=True)
-    description : Mapped[str | None] = mapped_column(nullable=True)
+    name : Mapped[str] = mapped_column(unique=True)
+    description : Mapped[str | None]
     seller_id : Mapped[int] = mapped_column(ForeignKey('users.id'))
     is_verified : Mapped[bool] = mapped_column(default=False)
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
 class ShopProduct(Base):
     __tablename__ = 'shopproducts'
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    quantity : Mapped[int] = mapped_column(nullable=False)
-    price : Mapped[int] = mapped_column(nullable=False)
+    quantity : Mapped[int]
+    price : Mapped[int]
     shop_id : Mapped[int] = mapped_column(ForeignKey('shops.id'))
     product_id : Mapped[int] = mapped_column(ForeignKey('products.id'))
     category_id : Mapped[int] = mapped_column(ForeignKey('categories.id'))
 class SellerApplication(Base):
     __tablename__ = 'sellerapplications'
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    text : Mapped[str | None] = mapped_column(nullable=True)
+    text : Mapped[str]
     status : Mapped[str] = mapped_column(Enum(ApplicationStatus),default=ApplicationStatus.pending)
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
     user_id : Mapped[int] = mapped_column(ForeignKey('users.id'))
-    reviewed_by : Mapped[int | None] = mapped_column(ForeignKey('users.id'), nullable=True, default=None)
+    reviewed_by : Mapped[int | None] = mapped_column(ForeignKey('users.id'), default=None)
 class ModerationRequest(Base):
     __tablename__ = 'mod_requests'
     id : Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    action_type : Mapped[str] = mapped_column(Enum(ActionType), nullable=False)
-    status : Mapped[str] = mapped_column(Enum(ApplicationStatus), default=Status.pending)
-    entity_id : Mapped[int] = mapped_column(nullable=False)
+    status : Mapped[str] = mapped_column(Enum(ApplicationStatus), default=ApplicationStatus.pending)
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
     shop_id : Mapped[int] = mapped_column(ForeignKey('shops.id'))
-    reviewed_by : Mapped[int | None] = mapped_column(ForeignKey('users.id'), nullable=True, default=None)
+    reviewed_by : Mapped[int | None] = mapped_column(ForeignKey('users.id'), default=None)
