@@ -16,12 +16,12 @@ class AdminService:
         # ----- ВСЕ ФУНКЦИИ ДАННОГО СЕРВИСА ДОСТУПНЫ ТОЛЬКО ОТ РОЛИ ADMIN И ВЫШЕ! -----
         # ----- ЕСЛИ ВЫ ПОЛУЧАЕТЕ 403 ОШИБКУ, НО ЕЕ НЕТ В ФУНКЦИИ, ТО У ВАС НЕДОСТАТОЧНО ПРАВ!
         
-    async def _get_user_or_404(self, user_id: int) -> User:
+    async def _get_user_or_404(self, username: str) -> User:
         """
-        Вспомогательная функция получения пользователя по ID.
+        Вспомогательная функция получения пользователя по юзернейму.
 
         Args:
-            user_id: Айди пользователя
+            username: юзернейм пользователя
         
         Return:
             Объект User.
@@ -29,7 +29,7 @@ class AdminService:
         Raises:
             HTTPException: 404, если пользователь не найден.
         """
-        user = await self.user_repo.get_by_id(user_id)
+        user = await self.user_repo.get_by_username(username)
         if not user:
             raise HTTPException(status_code=404, detail='Пользователь не найден')
         return user
@@ -38,19 +38,14 @@ class AdminService:
         Поиск всех пользователей системы.
         """
         return  await self.user_repo.get_all()
-    async def get_user_by_id(self, id : int):
-        """
-        Поиск пользователя по айди
-        """
-        return await self._get_user_or_404(id)
-    async def change_role(self, id : int, role : Role):
+    async def change_role(self, username : str, role : Role):
         """
         Данная функция предназначена для выдачи ролей.
         Доступная только для Creator
         """
-        user = await self._get_user_or_404(id)
+        user = await self._get_user_or_404(username)
         return await self.user_repo.update(user, {'role' : role})
-    async def ban_user(self, id : int, token : dict):
+    async def ban_user(self, username : str, token : dict):
         """
         Блокировка пользователя.
         Данная функция имеет несколько этапов проверки перед блокировокой, главные правила:
@@ -67,24 +62,24 @@ class AdminService:
             Уведомление о блокировке.
 
         Raises:
-            HTTPException: 403, если блокируешь админа\крейтера будучи админом или пользователь уже заблокирован.
+            HTTPException: 403, если блокируешь админа/крейтера будучи админом или пользователь уже заблокирован.
             HTTPException: 400, если блокируешь сам себя.
             HTTPException: 404, если пользователя нет в базе данных. (через _get_user_or_404).
         """
-        target = await self._get_user_or_404(id)
+        target = await self._get_user_or_404(username)
         if token['role'] == 'admin' and target.role.value in ['admin', 'creator']:
             raise HTTPException(status_code=403, detail='Недостаточно прав')
-        if int(token['sub']) == id:
+        if int(token['sub']) == target.id:
             raise HTTPException(status_code=400,detail='Нельзя заблокировать самого себя')
         if target.role == Role.banned:
             raise HTTPException(status_code=403, detail="Пользователь уже заблокирован")
         await self.user_repo.update(target, {'role' : Role.banned})
         try:
-            await redis_service.ban_user(id)
+            await redis_service.ban_user(target.id)
         except Exception as e:
-            logger.error(f"Ошибка при добавлении {id} в редис: {e}")
-        return {'detail' : f"Пользователь с ID {id} успешно заблокирован"}
-    async def user_unban(self, id : int, token : dict):
+            logger.error(f"Ошибка при добавлении {target.id} в редис: {e}")
+        return {'detail' : f"Пользователь с ID {target.id} успешно заблокирован"}
+    async def user_unban(self, username : str, token : dict):
         """
         Разблокировка пользователя.
         Позволяет разблокировать забаненного пользователя.
@@ -101,17 +96,17 @@ class AdminService:
             HTTPException: 403, если пользователь не заблокирован
             HTTPException: 404, если пользователя нет в базе данных. (через _get_user_or_404).
         """
-        target = await self._get_user_or_404(id)
-        if int(token['sub']) == id:
+        target = await self._get_user_or_404(username)
+        if int(token['sub']) == target.id:
             raise HTTPException(status_code=400,detail='Нельзя разблокировать самого себя')
         if target.role != Role.banned:
             raise HTTPException(status_code=403, detail="Пользователь не заблокирован.")
         await self.user_repo.update(target, {'role' : Role.user})
         try:
-            await redis_service.unban_user(id)
+            await redis_service.unban_user(target.id)
         except Exception as e:
-            logger.error(f"Ошибка при удалении {id} из редис: {e}")
-        return {'detail' : f'Пользователь {id} успешно разблокирован'}
+            logger.error(f"Ошибка при удалении {target.id} из редис: {e}")
+        return {'detail' : f'Пользователь {target.id} успешно разблокирован'}
     async def get_all_orders(self):
         """
         Все заказы всех пользователей.

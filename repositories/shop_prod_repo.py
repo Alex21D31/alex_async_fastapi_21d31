@@ -14,6 +14,9 @@ class ShopProductRepository:
     async def get_all_products_by_shop(self, shop_name : str) -> list[ShopProduct]:
         result = await self.db.execute(select(ShopProduct).join(Shop, ShopProduct.shop_id == Shop.id).where(Shop.name == shop_name))
         return result.scalars().all()
+    async def get_one_product_for_seller_by_name(self, prod_name : str, shop_id : int) -> ShopProduct | None:
+        result = await self.db.execute(select(ShopProduct).join(Product, ShopProduct.product_id == Product.id).where(Product.name == prod_name, ShopProduct.shop_id == shop_id))
+        return result.scalar_one_or_none()
     async def save(self, shop_product : ShopProduct) -> ShopProduct:
         self.db.add(shop_product)
         await self.db.commit()

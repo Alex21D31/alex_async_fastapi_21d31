@@ -26,6 +26,9 @@ class UserRepository:
         """
         result = await self.db.execute(select(User).where(User.id == id))
         return result.scalar_one_or_none()
+    async def get_by_username(self, username: str) -> User | None:
+        result = await self.db.execute(select(User).where(User.username == username))
+        return result.scalar_one_or_none()
     async def get_by_email(self,email : str) -> User | None:
         """
         Один пользователь из базы данных.

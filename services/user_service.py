@@ -28,9 +28,11 @@ class UserService:
         existing = await self.repo.get_by_email(data.email)
         if existing:
             raise HTTPException(status_code=409, detail='Email уже занят')
+        username_check = await self.repo.get_by_username(data.username)
+        if username_check: 
+            raise HTTPException(status_code=409, detail='Юзернейм уже занят')
         user = User(
-            name = data.name,
-            phone = data.phone,
+            username = data.username,
             email = data.email,
             password = hash_password(data.password)
         )
@@ -83,8 +85,8 @@ class UserService:
         except Exception as e:
             logger.error(f'Проблема занесения в редис: {e}')
         return {
-            'access_token' : create_access_token({'id': user.id, 'email': user.email, 'role': user.role.value}),
-            'refresh_token': create_refresh_token({'id': user.id, 'email': user.email, 'role': user.role.value})
+            'access_token' : create_access_token({'sub': user.id, 'email': user.email, 'role': user.role.value}),
+            'refresh_token': create_refresh_token({'sub': user.id, 'email': user.email, 'role': user.role.value})
         }
     async def logout_user(self, payload : dict):
         """
@@ -104,7 +106,7 @@ class UserService:
         expite_seconds = int(exp - (datetime.now(timezone.utc).timestamp()))
         if expite_seconds > 0:
             await redis_service.add_to_blacklist(jti, expite_seconds)
-    async def get_me(self,id : int) -> dict:
+    async def get_me(self,username : str) -> dict:
         """
         Получение информации о пользователе.
 
@@ -117,7 +119,7 @@ class UserService:
         Raises:
             HTTPException: 404, если пользователь не найден (через _get_user_or_404).
         """
-        user = await self._get_user_or_404(id)
+        user = await self.repo.get_by_username(username)
         return user
     async def update(self, update_data : UpdateUser, data : dict, password : str) -> dict:
         """

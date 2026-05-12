@@ -1,4 +1,6 @@
 from repositories.order_repo import OrderRepository
+from repositories.shop_prod_repo import ShopProductRepository
+from repositories.user_repo import UserRepository
 from repositories.product_repo import ProductRepository
 from schemas import CreateOrder, UpdateOrder
 from fastapi import HTTPException
@@ -8,10 +10,14 @@ from kafka_utils.producer import send_order_event
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 from aiokafka import AIOKafkaProducer
+import logging
+logger = logging.getLogger(__name__)
 
 class OrderService:
-    def __init__(self,order_repo: OrderRepository, product_repo: ProductRepository, db: AsyncSession):
+    def __init__(self,product_repo : ProductRepository,user_repo : UserRepository, order_repo: OrderRepository, shop_product_repo: ShopProductRepository, db: AsyncSession):
         self.order_repo = order_repo
+        self.shop_product_repo = shop_product_repo
+        self.user_repo = user_repo
         self.product_repo = product_repo
         self.db = db
     async def _get_order_or_404(self, order_id: int) -> Order:
@@ -23,7 +29,7 @@ class OrderService:
         if not order:
             raise HTTPException(status_code=404, detail='Заказ не найден')
         return order
-    async def create_order(self, user_id: int, data: CreateOrder,producer: AIOKafkaProducer) -> Order:
+    async def create_order(self, user_data : dict, data: CreateOrder,producer: AIOKafkaProducer) -> Order:
         """
         Создание заказа и списание товаров со склада.
 
@@ -35,7 +41,7 @@ class OrderService:
         5. Данные отправляются в Kafka для уведомлений.
 
         Args:
-            user_id: Айди пользователя.
+            user_data : данные пользователя из токена.
             data : Обьект CreateOrder, содержащий в себе список продуктов, отобранных пользователем.
             producer: взаимодействие с Kafka
         
@@ -46,31 +52,38 @@ class OrderService:
             HTTPException: 404, товар не найден
             HTTPException: 400, товара недостаточно
         """
-        order = Order(user_id=user_id, info=data.info)
-        self.db.add(order)
-        await self.db.flush()
+        try:
+            user = await self.user_repo.get_by_id(int(user_data['sub']))
+            order = Order(owner_name=user.username, info=data.info)
+            self.db.add(order)
+            await self.db.flush()
 
-        kafka_items = []
+            kafka_items = []
 
-        for item in data.items:
-            product = await self.product_repo.get_by_id(item.product_id)
-            if not product:
-                raise HTTPException(404, f'Товар {item.product_id} не найден')
-            if product.quantity < item.quantity:
-                raise HTTPException(400, f'Недостаточно товара {product.name} на складе')
-            product.quantity -= item.quantity
-            kafka_items.append({
-                'product_id' : product.id,
-                'name' : product.name,
-                'quantity' : item.quantity
-            })
-            order_item = OrderItem(
-                order_id=order.id,
-                product_id=item.product_id,
-                quantity=item.quantity
-            )
-            self.db.add(order_item)
-        await self.db.commit()
+            for item in data.items:
+                product_in_shop = await self.shop_product_repo.get_by_id(item.shop_product_id)
+                if not product_in_shop:
+                    raise HTTPException(404, f'Товар {item.shop_product_id} не найден')
+                if product_in_shop.quantity < item.quantity:
+                    raise HTTPException(400, f'Недостаточно товара {product_in_shop.name} на складе')
+                product_in_shop.quantity -= item.quantity
+                product = await self.product_repo.get_by_id(product_in_shop.product_id)
+                kafka_items.append({
+                    'product_id' : product_in_shop.id,
+                    'name' : product.name,
+                    'quantity' : item.quantity
+                })
+                order_item = OrderItem(
+                    order_id=order.id,
+                    product_name=product.name,
+                    shop_product_id=product_in_shop.id,
+                    quantity=item.quantity
+                )
+                self.db.add(order_item)
+            await self.db.commit()
+        except Exception:
+            await self.db.rollback()
+            raise
         query = (
             select(Order)
             .where(Order.id == order.id)
@@ -83,20 +96,20 @@ class OrderService:
         try:
             await send_order_event(
                 order_id = order.id,
-                user_id = user_id,
+                user_id = user_data['sub'],
                 items = kafka_items,
                 producer=producer
             )
         except Exception as e:
-            print(f'Kafka недоступна, событие для заказа {order.id} потеряно. {e} ')
+            logger.error(f'Kafka недоступна, событие для заказа {order.id} потеряно. {e}')
         return order
     async def get_all_orders(self, data : dict) -> list[Order]:
         """
         Получение  информации обо всех заказов пользователя.
         В качестве параметра ID для поиска используется айди пользователя из его Access токена.
         """
-        result = await self.order_repo.get_all_orders_by_user(int(data['sub']))
-        return result
+        user = await self.user_repo.get_by_id(int(data['sub']))
+        return await self.order_repo.get_all_orders_by_user(user.username)
     async def get_one_order(self, order_id : int, data : dict) -> Order:
         """
         Получение  информации об 1 заказе пользователя.
@@ -111,7 +124,8 @@ class OrderService:
         Raises:
             HTTPException: 404, заказ не найден.
         """
-        result = await self.order_repo.get_by_id_for_user(order_id, int(data['sub']))
+        user = await self.user_repo.get_by_id(int(data['sub']))
+        result = await self.order_repo.get_by_id_for_user(order_id, user.username)
         if not result:
             raise HTTPException(404, 'Заказ не найден')
         return result

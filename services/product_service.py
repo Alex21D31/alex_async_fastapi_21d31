@@ -6,7 +6,7 @@ from fastapi import HTTPException
 class ProductService():
     def __init__(self,repo : ProductRepository):
         self.repo = repo
-    async def _get_prod_or_404(self, prod_id: int) -> Product:
+    async def _get_prod_or_404(self, prod_name: str) -> Product:
         """
         Получение информации о продукте из базы данных.
         Внутренняя функция, используется для проверки на наличие в основных функциях.
@@ -20,7 +20,7 @@ class ProductService():
         Raises:
             HTTPException: 404, продукт не найден.
         """
-        prod = await self.repo.get_by_id(prod_id)
+        prod = await self.repo.get_by_name(prod_name)
         if not prod:
             raise HTTPException(status_code=404, detail='Продукт не найден')
         return prod
@@ -29,21 +29,21 @@ class ProductService():
         Получение информации обо всех продуктах.
         """
         return await self.repo.get_all()
-    async def get_by_id_prod(self, id : int):
+    async def get_by_prod_name(self, name : str):
         """
-        Получение информации о продукте по Айди.
+        Получение информации о продукте по названию.
 
         Raises:
-            HTTPException: 404, если продукт не найден (через _get_prod_or_404).
+            HTTPException: 404, если продукт не найден. (через _get_prod_or_404)
         """
-        return await self._get_prod_or_404(id)
-    async def create(self, prod : CreateProduct, user_data : dict) -> dict:
+        return await self._get_prod_or_404(name)
+    async def create(self, prod : CreateProduct) -> dict:
         """
         Создание нового продукта.
         Функция доступна только для ролей Admin и выше.
 
         Args:
-            prod: словарь обязательных параметров(name, description, price, quantity).
+            prod: словарь обязательных параметров(name, description).
         
         Retruens:
             Результат создания.
@@ -56,11 +56,10 @@ class ProductService():
         product = Product(
             name = prod.name,
             description = prod.description,
-            price = prod.price,
-            quantity = prod.quantity
+            category = prod.category
         )
         return await self.repo.save(product)
-    async def update(self,prod_id : int, new_data : UpdateProduct) -> dict:
+    async def update(self,product_name : str, new_data : UpdateProduct) -> dict:
         """
         Обновление информации о продукте.
         Функция доступна только для ролей Admin и выше.
@@ -75,9 +74,9 @@ class ProductService():
         Raises:
             HTTPException: 404, если продукт не найден (через _get_prod_or_404).
         """
-        prod = await self._get_prod_or_404(prod_id)
-        return await self.repo.update(prod, new_data.model_dump(exclude_none=True)) 
-    async def delete(self, prod_id : int) -> str:
+        product = await self._get_prod_or_404(product_name)
+        return await self.repo.update(product, new_data.model_dump(exclude_none=True)) 
+    async def delete(self, product_name : str) -> str:
         """
         Удаление продукта.
         Функция доступна только для ролей Admin и выше.
@@ -91,7 +90,7 @@ class ProductService():
         Raises:
             HTTPException: 404, если продукт не найден (через _get_prod_or_404).
         """
-        prod = await self._get_prod_or_404(prod_id)
+        prod = await self._get_prod_or_404(product_name)
         await self.repo.delete(prod)
         return f'Продукт {prod.name} успешно удален из базы данных.'
         

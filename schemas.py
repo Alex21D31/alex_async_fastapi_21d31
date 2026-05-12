@@ -10,6 +10,7 @@ class CreateUser(BaseModel):
 class CreateProduct(BaseModel):
     name : str
     description : str | None = None
+    category : str
 class OutProduct(BaseSchema):
     name : str
     description : str | None = None
@@ -56,7 +57,6 @@ class CreateCategory(BaseModel):
     name : str
     description : str | None = None
 class OutCategory(BaseSchema):
-    id : int
     name : str
     description : str | None = None
 class CreateShop(BaseModel):
