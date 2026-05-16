@@ -30,5 +30,7 @@ class SellerApplicationService:
         return applications
     async def review_application(self, admin_data : dict, application_id : int, new_status : ApplicationStatus) -> SellerApplication:
         application = await self._get_application_or_404(application_id)
+        if application.status == new_status:
+            raise HTTPException(status_code=401, detail='Такой статус объявление имеет сейчас.')
         return await self.apply_repo.update_status(application,new_status, admin_data['sub'])
     

@@ -22,9 +22,7 @@ def upgrade() -> None:
     op.execute("""
         CREATE TABLE mod_requests (
             id SERIAL PRIMARY KEY,
-            action_type actiontype NOT NULL,
-            status applicationstatus NOT NULL DEFAULT 'pending',
-            entity_id INTEGER NOT NULL,
+            status VARCHAR NOT NULL DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT now() NOT NULL,
             shop_id INTEGER NOT NULL REFERENCES shops(id),
             reviewed_by INTEGER REFERENCES users(id)

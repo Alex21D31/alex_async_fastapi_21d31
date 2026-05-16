@@ -14,7 +14,7 @@ async def create_order(new_order : CreateOrder, token_data : dict = Depends(veri
     """
     Создание заказа.
     """
-    return await service.create_order(int(token_data['sub']), new_order, producer)
+    return await service.create_order(token_data, new_order, producer)
 @router.get('', response_model=list[OutOrder])
 async def get_my_orders(token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
     """

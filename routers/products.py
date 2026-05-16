@@ -11,12 +11,12 @@ async def get_all_products(service : ProductService = Depends(get_product_servic
     Получение информации обо всех продуктах.
     """
     return await service.get_all_prod()
-@router.get('/{id}',response_model=OutProduct)
-async def get_product(id : int, service : ProductService = Depends(get_product_service)):
+@router.get('/{product_name}',response_model=OutProduct)
+async def get_product(product_name : str, service : ProductService = Depends(get_product_service)):
     """
-    Получение информации о продукте по ID.
+    Получение информации о продукте по названию.
     """
-    return await service.get_by_id_prod(id)
+    return await service.get_by_prod_name(product_name)
 @router.post('', response_model=OutProduct)
 @require_role('admin', 'creator')
 async def create_product(new_product : CreateProduct, token_data : dict = Depends(verify_token),service : ProductService = Depends(get_product_service)):
@@ -24,17 +24,17 @@ async def create_product(new_product : CreateProduct, token_data : dict = Depend
     Создание продукта.
     """
     return await service.create(new_product)
-@router.patch('/{id}',response_model=OutProduct)
+@router.patch('/{product_name}',response_model=OutProduct)
 @require_role('admin', 'creator')
-async def patch_product(id : int, new_data : UpdateProduct,token_data : dict = Depends(verify_token),service : ProductService = Depends(get_product_service)):
+async def patch_product(product_name : str, new_data : UpdateProduct,token_data : dict = Depends(verify_token),service : ProductService = Depends(get_product_service)):
     """
     Изменение продукта.
     """
-    return await service.update(id, new_data)
-@router.delete('/{id}')
+    return await service.update(product_name, new_data)
+@router.delete('/{product_name}')
 @require_role('admin', 'creator')
-async def delete_product(id : int,token_data : dict = Depends(verify_token),service : ProductService = Depends(get_product_service)):
+async def delete_product(product_name : str,token_data : dict = Depends(verify_token),service : ProductService = Depends(get_product_service)):
     """
     Удаление продукта.
     """
-    return await service.delete(id)
+    return await service.delete(product_name)

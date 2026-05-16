@@ -33,6 +33,8 @@ class AdminService:
         if not user:
             raise HTTPException(status_code=404, detail='Пользователь не найден')
         return user
+    async def get_user_by_username(self, username: str) -> User:
+        return await self._get_user_or_404(username)
     async def get_all_users(self):
         """
         Поиск всех пользователей системы.
