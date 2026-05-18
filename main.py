@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from kafka_utils.producer import get_producer
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from middleware import LogMiddleware, RateLimitMiddleware
-from routers import auth, admins, users, orders, products
+from routers import auth, admins, users, orders, products, sellers, shops
 from models import User, Product, Order, OrderItem
 from services.redis_service import redis_service
 from aiokafka import AIOKafkaProducer
@@ -31,3 +31,5 @@ app.include_router(users.router)
 app.include_router(products.router)
 app.include_router(orders.router)
 app.include_router(admins.router)
+app.include_router(sellers.router)
+app.include_router(shops.router)
