@@ -21,18 +21,15 @@ async def get_my_orders(token_data : dict = Depends(verify_token), service : Ord
     Просмотр всех заказов пользователя.
     """
     return await service.get_all_orders(token_data)
+@router.get('/task_status/{id}')
+async def get_task_status(id : int, token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
+    return await service.get_task_status(id, token_data)
 @router.get('/{id}', response_model=OutOrder)
 async def get_one_order(id : int, token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
     """
     Просмотр заказа пользователя по ID.
     """
     return await service.get_one_order(id, token_data)
-@router.patch('/{id}',response_model=OutOrder)
-async def update_order(id : int, new_data : UpdateOrder, token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
-    """
-    Изменение данных заказа.
-    """
-    return await service.update_order(id, new_data)
 @router.patch('/status/{id}',response_model=OutOrder)
 @require_role('admin', 'creator')
 async def update_status(id : int, new_status : Status,token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
@@ -40,6 +37,12 @@ async def update_status(id : int, new_status : Status,token_data : dict = Depend
     Изменение статуса заказа.
     """
     return await service.update_status(id, new_status)
+@router.patch('/{id}',response_model=OutOrder)
+async def update_order(id : int, new_data : UpdateOrder, token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):
+    """
+    Изменение данных заказа.
+    """
+    return await service.update_order(id, new_data)
 @router.delete('/{id}')
 @require_role('admin', 'creator')
 async def delete_order(id : int,  token_data : dict = Depends(verify_token), service : OrderService = Depends(get_order_service)):

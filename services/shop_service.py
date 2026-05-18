@@ -15,6 +15,8 @@ class ShopService:
         if not shop:
             raise HTTPException(status_code=404, detail="Магазин не найден")
         return shop
+    async def get_by_name(self, shop_name : str) -> Shop:
+        return await self._get_shop_or_404(shop_name)
     async def get_by_seller_id(self, seller_id : int) -> Shop:
         shop = await self.shop_repo.get_by_seller_id(seller_id)
         if not shop:
@@ -34,21 +36,17 @@ class ShopService:
             seller_id=user_data['sub']
             )
         return await self.shop_repo.save_shop(shop)
-    async def update_shop(self, user_data : dict, shop_name : str, password : str, update_data : UpdateShop) -> Shop:
+    async def update_shop(self, user_data : dict, password : str, update_data : UpdateShop) -> Shop:
         user = await self.user_repo.get_by_id(user_data['sub'])
         if not verify_password(password,user.password):
             raise HTTPException(status_code=403, detail="Неверный пароль")
-        shop = await self._get_shop_or_404(shop_name)
-        if shop.seller_id != user_data['sub']:
-            raise HTTPException(status_code=403,detail='Этот магазин вам не принадлежит.')
+        shop = await self.shop_repo.get_by_seller_id(int(user_data['sub']))
         return await self.shop_repo.update_shop(shop, update_data)
-    async def delete_shop(self, user_data : dict, shop_name : str, password : str):
+    async def delete_shop(self, user_data : dict, password : str):
         user = await self.user_repo.get_by_id(user_data['sub'])
         if not verify_password(password,user.password):
             raise HTTPException(status_code=403, detail="Неверный пароль")
-        shop = await self._get_shop_or_404(shop_name)
-        if shop.seller_id != user_data['sub']:
-            raise HTTPException(status_code=403,detail='Этот магазин вам не принадлежит.')
+        shop = await self.shop_repo.get_by_seller_id(int(user_data['sub']))
         await self.shop_repo.delete_shop(shop)
         await self.user_repo.update_role(user, Role.user)
         return {'detail' : 'Ваш магазин успешно удален.'}

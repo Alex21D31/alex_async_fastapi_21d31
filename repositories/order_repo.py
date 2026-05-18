@@ -39,7 +39,7 @@ class OrderRepository:
         Return:
             Заказ пользователя или None, если заказ не найден.
         """
-        result = await self.db.execute(select(Order).where(Order.id == id, Order.owner_name == username).options(joinedload(Order.items).joinedload(OrderItem.product)))
+        result = await self.db.execute(select(Order).where(Order.id == id, Order.owner_name == username))
         return result.unique().scalar_one_or_none()
     async def get_all_orders_by_user(self, username : str):
         """

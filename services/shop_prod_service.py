@@ -13,12 +13,15 @@ class ShopProductService:
         self.prod_repo = prod_repo
         self.categ_repo = categ_repo
     async def get_by_name_for_seller(self, seller_data : dict, prod_name : str) -> ShopProduct:
-        shop = await self.shop_repo.get_by_seller_id(seller_data['sub'])
+        shop = await self.shop_repo.get_by_seller_id(int(seller_data['sub']))
         product = await self.shop_prod_repo.get_one_product_for_seller_by_name(prod_name, shop.id)
         if not product:
             raise HTTPException(status_code=404,detail="Продукт не найден в базе данных.")
         return product
-    async def get_all_products_by_shop(self, shop_name: str) -> list[ShopProduct]:
+    async def get_all_products_by_shop_for_owner(self, user_data: list) -> list[ShopProduct]:
+        shop = await self.shop_repo.get_by_seller_id(int(user_data['sub']))
+        return await self.shop_prod_repo.get_all_products_by_shop(shop.name)
+    async def get_all_products_by_shop_by_name(self, shop_name : str) -> list[ShopProduct]:
         return await self.shop_prod_repo.get_all_products_by_shop(shop_name)
     async def add_product(self, seller_data : dict, new_product : CreateShopProduct) -> ShopProduct:
         shop = await self.shop_repo.get_by_seller_id(seller_data['sub'])

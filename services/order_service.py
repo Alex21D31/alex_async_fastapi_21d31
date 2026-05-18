@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import Order, OrderItem, Status
 from kafka_utils.producer import send_order_event
 from sqlalchemy.orm import selectinload
+from celery.result import AsyncResult
 from sqlalchemy import select
 from aiokafka import AIOKafkaProducer
 import logging
@@ -123,7 +124,7 @@ class OrderService:
         
         Raises:
             HTTPException: 404, заказ не найден.
-        """
+        """ 
         user = await self.user_repo.get_by_id(int(data['sub']))
         result = await self.order_repo.get_by_id_for_user(order_id, user.username)
         if not result:
@@ -171,3 +172,13 @@ class OrderService:
         """
         order = await self._get_order_or_404(order_id)
         return await self.order_repo.update(order, {'status' : new_status})
+    async def get_task_status(self, task_id : int, token_data : dict):
+        user = await self.user_repo.get_by_id(int(token_data['sub']))
+        order = await self.order_repo.get_by_id_for_user(task_id, user.username)
+        if not order:
+            raise HTTPException(status_code=404, detail='Заказ не найден')
+        result = AsyncResult(order.task_id) if order.task_id else None
+        return {
+            'task_stage': order.task_stage,
+            'celery_status': result.status if result else None
+        }
