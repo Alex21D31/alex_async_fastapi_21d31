@@ -10,7 +10,7 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
-EXCLUDED_PATHS = ['/products', '/openapi.json', '/docs', '/redoc']
+EXCLUDED_PATHS = ['/docs', '/openapi.json', '/redoc', '/static/']
 
 LIMIT = 5
 WINDOW = 30
