@@ -3,7 +3,7 @@ from auth import hash_password, verify_password, create_access_token,create_refr
 from services.redis_service import redis_service
 from datetime import datetime,timezone
 from schemas import CreateUser, UpdateUser, UpdatePassword
-from celery_utils.tasks import send_welcome_email, change_password_email
+from celery_utils.email_tasks import send_welcome_email, change_password_email
 from models import User, Role
 from fastapi import HTTPException
 import logging
@@ -106,7 +106,7 @@ class UserService:
         expite_seconds = int(exp - (datetime.now(timezone.utc).timestamp()))
         if expite_seconds > 0:
             await redis_service.add_to_blacklist(jti, expite_seconds)
-    async def get_me(self,username : str) -> dict:
+    async def get_me(self,data : dict) -> dict:
         """
         Получение информации о пользователе.
 
@@ -119,7 +119,7 @@ class UserService:
         Raises:
             HTTPException: 404, если пользователь не найден (через _get_user_or_404).
         """
-        user = await self.repo.get_by_username(username)
+        user = await self._get_user_or_404(int(data['sub']))
         return user
     async def update(self, update_data : UpdateUser, data : dict, password : str) -> dict:
         """

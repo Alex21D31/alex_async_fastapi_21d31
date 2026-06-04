@@ -28,6 +28,6 @@ class ModerationService:
         if new_status == ApplicationStatus.approved:
             shop = await self.shop_repo.get_by_id(request.shop_id)
             await self.shop_repo.set_verified(shop, True)
-        return await self.moder_repo.update_status(request, new_status, admin_data['sub'])
+        return await self.moder_repo.update_status(request, new_status, int(admin_data['sub']))
 
         

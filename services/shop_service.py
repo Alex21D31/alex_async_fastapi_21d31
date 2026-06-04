@@ -28,22 +28,22 @@ class ShopService:
     async def create_shop(self, user_data : dict, shop_data : CreateShop) -> Shop:
         if await self.shop_repo.get_by_shop_name(shop_data.name):
             raise HTTPException(status_code=409, detail='Магазин с таким названием уже существует.')
-        if await self.shop_repo.get_by_seller_id(user_data['sub']):
+        if await self.shop_repo.get_by_seller_id(int(user_data['sub'])):
             raise HTTPException(status_code=409, detail='У вас уже есть магазин.')
         shop = Shop(
             name = shop_data.name,
             description = shop_data.description,
-            seller_id=user_data['sub']
+            seller_id=int(user_data['sub'])
             )
         return await self.shop_repo.save_shop(shop)
     async def update_shop(self, user_data : dict, password : str, update_data : UpdateShop) -> Shop:
-        user = await self.user_repo.get_by_id(user_data['sub'])
+        user = await self.user_repo.get_by_id(int(user_data['sub']))
         if not verify_password(password,user.password):
             raise HTTPException(status_code=403, detail="Неверный пароль")
         shop = await self.shop_repo.get_by_seller_id(int(user_data['sub']))
         return await self.shop_repo.update_shop(shop, update_data)
     async def delete_shop(self, user_data : dict, password : str):
-        user = await self.user_repo.get_by_id(user_data['sub'])
+        user = await self.user_repo.get_by_id(int(user_data['sub']))
         if not verify_password(password,user.password):
             raise HTTPException(status_code=403, detail="Неверный пароль")
         shop = await self.shop_repo.get_by_seller_id(int(user_data['sub']))

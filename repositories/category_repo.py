@@ -8,9 +8,6 @@ class CategoryRepository:
     async def get_by_id(self,id : int) -> Category | None:
         result = await self.db.execute(select(Category).where(Category.id == id))
         return result.scalar_one_or_none()
-    async def get_by_name(self,name : str) -> Category | None:
-        result = await self.db.execute(select(Category).where(Category.name == name))
-        return result.scalar_one_or_none()
     async def get_all(self) -> list[Category]:
         result = await self.db.execute(select(Category))
         return result.scalars().all()

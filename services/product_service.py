@@ -93,4 +93,5 @@ class ProductService():
         prod = await self._get_prod_or_404(product_name)
         await self.repo.delete(prod)
         return f'Продукт {prod.name} успешно удален из базы данных.'
-        
+    async def get_all_products_by_category(self, category_name : str) -> list[Product]:
+        return await self.repo.get_all_products_by_category(category_name)

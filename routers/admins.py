@@ -1,9 +1,10 @@
-from schemas import OutUser, OutOrder, OutSellerApplication
+from schemas import OutUser, OutOrder, OutSellerApplication, OutCategory, CreateCategory, OutModerationRequest
 from services.admin_service import AdminService
 from services.seller_application_service import SellerApplicationService
 from services.moderation_service import ModerationService
+from services.category_service import CategoryService
 from fastapi import APIRouter, Depends
-from dependencies import get_admin_service, get_seller_application_serivce, get_moderation_service
+from dependencies import get_admin_service, get_seller_application_serivce, get_category_service, get_moderation_service
 from auth import verify_token
 from decorators import require_role
 from models import Role, ApplicationStatus
@@ -58,19 +59,27 @@ async def user_statistics(token_data : dict = Depends(verify_token),service : Ad
     Получение информации о количестве активных пользователях за сутки.
     """
     return await service.get_statistics()
-@router.get('/seller-applications')
+@router.get('/seller-applications', response_model=list[OutSellerApplication])
 @require_role('admin', 'creator')
 async def get_pending_applications(token_data : dict = Depends(verify_token),service : SellerApplicationService = Depends(get_seller_application_serivce)):
     return await service.get_pending_application()
-@router.patch('/seller-applications/{application_id}/review')
+@router.patch('/seller-applications/{application_id}/review',response_model=OutSellerApplication)
 @require_role('admin', 'creator')
 async def update_application_status(application_id: int, new_status: ApplicationStatus, token_data : dict = Depends(verify_token), service : SellerApplicationService = Depends(get_seller_application_serivce)):
     return await service.review_application(token_data, application_id, new_status)
-@router.get('/moderation')
+@router.get('/moderation', response_model=list[OutModerationRequest])
 @require_role('admin', 'creator')
 async def get_requests_for_moderation(token_data : dict = Depends(verify_token), service : ModerationService = Depends(get_moderation_service)):
     return await service.get_pendings()
-@router.patch('/moderation/{request_id}/review')
+@router.patch('/moderation/{request_id}/review', response_model=OutModerationRequest)
 @require_role('admin', 'creator')
 async def moderation_review(request_id: int, new_status: ApplicationStatus, token_data : dict = Depends(verify_token), service : ModerationService = Depends(get_moderation_service)):
     return await service.review(request_id, new_status, token_data)
+@router.post('/categories',response_model=OutCategory)
+@require_role('admin', 'creator')
+async def create_category(new_category : CreateCategory, token_data : dict = Depends(verify_token), service : CategoryService = Depends(get_category_service)):
+    return await service.create_category(new_category)
+@router.delete('/categories/{name}')
+@require_role('admin', 'creator')
+async def delete_category(name : str, token_data : dict = Depends(verify_token), service : CategoryService = Depends(get_category_service)):
+    return await service.delete_category(name)

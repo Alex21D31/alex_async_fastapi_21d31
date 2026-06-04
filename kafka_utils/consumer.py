@@ -2,8 +2,7 @@ import json
 import asyncio
 from aiokafka import AIOKafkaConsumer
 from config import settings
-from celery_utils.tasks import send_order_confirmation
-
+from celery_utils.email_tasks import send_order_confirmation
 async def start_order_consumer():
     """
     Запуск консьюмера Kafka для обработки событий создания заказа.

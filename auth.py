@@ -59,7 +59,7 @@ def create_access_token(data : dict) -> str:
     Создаёт JWT access токен для аутентификации пользователя.
 
     Args:
-        data: словарь с данными пользователя (id, email, role).
+        data: словарь с данными пользователя (sub, email, role).
 
     Returns:
         подписанный JWT access токен со сроком жизни 30 минут,
@@ -69,7 +69,7 @@ def create_access_token(data : dict) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=LIVE_TIME)
     uid = str(uuid.uuid4())
     token_data = {
-        'sub' : str(info['id']),
+        'sub' : str(info['sub']),
         'email' : info['email'],
         'token' : 'access',
         'exp' : expire,
@@ -83,7 +83,7 @@ def create_refresh_token(data : dict) -> str:
     Создаёт JWT refresh токен для получения новых access токенов.
 
     Args:
-        data: Словарь с данными пользователя (id, email, role).
+        data: Словарь с данными пользователя (sub, email, role).
 
     Returns:
         Подписанный JWT refresh токен со сроком жизни 30 дней,
@@ -93,7 +93,7 @@ def create_refresh_token(data : dict) -> str:
     expire = datetime.now(timezone.utc) + timedelta(days=30)
     uid = str(uuid.uuid4())
     token_data = {
-        'sub' : str(info['id']),
+        'sub' : str(info['sub']),
         'email' : info['email'],
         'token' : 'refresh',
         'exp' : expire,

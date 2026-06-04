@@ -79,8 +79,8 @@ class AdminService:
         try:
             await redis_service.ban_user(target.id)
         except Exception as e:
-            logger.error(f"Ошибка при добавлении {target.id} в редис: {e}")
-        return {'detail' : f"Пользователь с ID {target.id} успешно заблокирован"}
+            logger.error(f"Ошибка при добавлении {target.username} в редис: {e}")
+        return {'detail' : f"Пользователь {target.username} успешно заблокирован"}
     async def user_unban(self, username : str, token : dict):
         """
         Разблокировка пользователя.
@@ -107,8 +107,8 @@ class AdminService:
         try:
             await redis_service.unban_user(target.id)
         except Exception as e:
-            logger.error(f"Ошибка при удалении {target.id} из редис: {e}")
-        return {'detail' : f'Пользователь {target.id} успешно разблокирован'}
+            logger.error(f"Ошибка при удалении {target.username} из редис: {e}")
+        return {'detail' : f'Пользователь {target.username} успешно разблокирован'}
     async def get_all_orders(self):
         """
         Все заказы всех пользователей.

@@ -9,7 +9,7 @@ async def get_user_info(token_data : dict = Depends(verify_token), service : Use
     """
     Получение информации о пользователе.
     """
-    return await service.get_me(int(token_data['sub']))
+    return await service.get_me(token_data)
 @router.patch('/me', response_model=OutUser)
 async def patch_user(new_data : UpdateUser, password : str = Header(alias='x-password'), token_data : dict = Depends(verify_token), service : UserService = Depends(get_user_service)):
     """

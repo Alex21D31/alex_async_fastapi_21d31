@@ -82,3 +82,6 @@ class ProductRepository:
         """
         await self.db.delete(prod)
         await self.db.commit()
+    async def get_all_products_by_category(self, category_name : str) -> list[Product]:
+        result = await self.db.execute(select(Product).where(Product.category == category_name))
+        return result.scalars().all()
