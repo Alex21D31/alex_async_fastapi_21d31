@@ -10,16 +10,24 @@ from aiokafka import AIOKafkaProducer
 from config import settings
 import json
 from database import engine, Base
+from kafka_utils.consumer import start_order_consumer
+from kafka_utils.notify_consumer import start_notify_consumer
+import asyncio
+
 
 @asynccontextmanager
-async def lifespan(app : FastAPI):
+async def lifespan(app: FastAPI):
     producer = AIOKafkaProducer(
         bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
         value_serializer=lambda v: json.dumps(v).encode('utf-8')
     )
     await producer.start()
     app.state.producer = producer
+    order_consumer_task = asyncio.create_task(start_order_consumer())
+    notify_consumer_task = asyncio.create_task(start_notify_consumer())
     yield
+    order_consumer_task.cancel()
+    notify_consumer_task.cancel()
     await producer.stop()
     await redis_service.close()
 app = FastAPI(lifespan=lifespan)

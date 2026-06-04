@@ -3,11 +3,12 @@ from services.admin_service import AdminService
 from services.seller_application_service import SellerApplicationService
 from services.moderation_service import ModerationService
 from services.category_service import CategoryService
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from dependencies import get_admin_service, get_seller_application_serivce, get_category_service, get_moderation_service
 from auth import verify_token
 from decorators import require_role
 from models import Role, ApplicationStatus
+from kafka_utils.producer import get_producer
 
 router = APIRouter(prefix='/admin', tags=['admin'])
 @router.get('/users', response_model=list[OutUser])
@@ -63,18 +64,20 @@ async def user_statistics(token_data : dict = Depends(verify_token),service : Ad
 @require_role('admin', 'creator')
 async def get_pending_applications(token_data : dict = Depends(verify_token),service : SellerApplicationService = Depends(get_seller_application_serivce)):
     return await service.get_pending_application()
-@router.patch('/seller-applications/{application_id}/review',response_model=OutSellerApplication)
+@router.patch('/seller-applications/{application_id}/review', response_model=OutSellerApplication)
 @require_role('admin', 'creator')
-async def update_application_status(application_id: int, new_status: ApplicationStatus, token_data : dict = Depends(verify_token), service : SellerApplicationService = Depends(get_seller_application_serivce)):
-    return await service.review_application(token_data, application_id, new_status)
+async def update_application_status(application_id: int, new_status: ApplicationStatus, request: Request, token_data: dict = Depends(verify_token), service: SellerApplicationService = Depends(get_seller_application_serivce)):
+    producer = await get_producer(request)
+    return await service.review_application(token_data, application_id, new_status, producer)
 @router.get('/moderation', response_model=list[OutModerationRequest])
 @require_role('admin', 'creator')
 async def get_requests_for_moderation(token_data : dict = Depends(verify_token), service : ModerationService = Depends(get_moderation_service)):
     return await service.get_pendings()
 @router.patch('/moderation/{request_id}/review', response_model=OutModerationRequest)
 @require_role('admin', 'creator')
-async def moderation_review(request_id: int, new_status: ApplicationStatus, token_data : dict = Depends(verify_token), service : ModerationService = Depends(get_moderation_service)):
-    return await service.review(request_id, new_status, token_data)
+async def moderation_review(request_id: int, new_status: ApplicationStatus, request: Request, token_data: dict = Depends(verify_token), service: ModerationService = Depends(get_moderation_service)):
+    producer = await get_producer(request)
+    return await service.review(request_id, new_status, token_data, producer)
 @router.post('/categories',response_model=OutCategory)
 @require_role('admin', 'creator')
 async def create_category(new_category : CreateCategory, token_data : dict = Depends(verify_token), service : CategoryService = Depends(get_category_service)):

@@ -3,6 +3,8 @@ import asyncio
 from aiokafka import AIOKafkaConsumer
 from config import settings
 from celery_utils.email_tasks import send_order_confirmation
+from celery_utils.order_tasks import process_order
+
 async def start_order_consumer():
     """
     Запуск консьюмера Kafka для обработки событий создания заказа.
@@ -21,13 +23,15 @@ async def start_order_consumer():
         async for msg in consumer:
             # Извлечение данных из сообщения.
             order_data = msg.value
-            print(f" Получен заказ: {order_data['order_id']}")
-            # Передача задачи для отправки в Celery.
+            print(f"Получен заказ: {order_data['order_id']}")
+            # Отправка email подтверждения.
             send_order_confirmation.delay(
                 user_id=order_data['user_id'],
                 order_id=order_data['order_id'],
                 items=order_data['items']
             )
+            # Запуск обработки заказа по этапам.
+            process_order.delay(order_id=order_data['order_id'])
     finally:
         await consumer.stop()
 
