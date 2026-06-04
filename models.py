@@ -55,8 +55,10 @@ class Order(Base):
     updated_at : Mapped[datetime | None] = mapped_column(onupdate=func.now())
     status : Mapped[str] = mapped_column(Enum(Status), default=Status.pending)
     owner_name : Mapped[str] = mapped_column(ForeignKey('users.username'))
+    shop_id: Mapped[int] = mapped_column(ForeignKey('shops.id'))
     task_id : Mapped[str | None]
     task_stage : Mapped[str] = mapped_column(Enum(TaskStage),default=TaskStage.pending)
+    shop: Mapped['Shop'] = relationship('Shop', back_populates='orders')
     user : Mapped['User'] = relationship('User', back_populates='orders')
     items : Mapped[list['OrderItem']] = relationship('OrderItem', back_populates='order',cascade='all, delete-orphan', lazy='selectin')
 class OrderItem(Base):
@@ -83,6 +85,8 @@ class Shop(Base):
     description : Mapped[str | None]
     seller_id : Mapped[int] = mapped_column(ForeignKey('users.id'))
     seller : Mapped['User'] = relationship('User', lazy='selectin')
+    products: Mapped[list['ShopProduct']] = relationship('ShopProduct', lazy='selectin')
+    orders: Mapped[list['Order']] = relationship('Order', back_populates='shop')
     is_verified : Mapped[bool] = mapped_column(default=False)
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
 class ShopProduct(Base):
