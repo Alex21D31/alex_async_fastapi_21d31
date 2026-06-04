@@ -1,138 +1,174 @@
 # Async FastAPI Shop Engine
 
-Современный асинхронный API для интернет-магазина, построенный на принципах **Layered Architecture** (слоистой архитектуры). Проект ориентирован на высокую производительность, четкое разделение ответственности и безопасность данных.
+Асинхронный backend интернет-магазина с полноценной event-driven инфраструктурой.
+Проект портфолийный — демонстрирует работу с production-стеком на реальных паттернах.
+
+---
 
 ## Технологический стек
 
-Framework: `FastAPI` (Full Async)
-Database: `PostgreSQL` + `SQLAlchemy 2.0` (Async Engine)
-Cache & Security: `Redis`
-Migrations: `Alembic`
-Auth: `JWT` (JSON Web Tokens) + `Passlib` (Bcrypt)
-Validation: `Pydantic v2`
-DevOps: `Docker` & `Docker Compose`
-Testing: `Pytest` + `Pytest-asyncio` + `Pytest-cov`
+| Слой | Технологии |
+|------|-----------|
+| Framework | FastAPI (Full Async) |
+| Database | PostgreSQL + SQLAlchemy 2.0 Async |
+| Cache | Redis |
+| Message Broker | Apache Kafka + aiokafka |
+| Task Queue | Celery (два воркера: io / cpu) |
+| Monitoring | Flower (Celery dashboard) |
+| Migrations | Alembic |
+| Auth | JWT + Passlib (Bcrypt) |
+| Proxy | Nginx (reverse proxy + load balancing) |
+| DevOps | Docker + Docker Compose |
 
-## Архитектура проекта
-Проект реализован с использованием Dependency Injection и разделен на логические слои:
+---
 
-1. Routers (API Level): Прием запросов и возврат HTTP-ответов.
-2. Services (Business Logic): Ядро системы. Обработка логики и взаимодействие с брокерами.
-3. Repositories (Data Access): Изолированный слой для CRUD-операций через SQLAlchemy.
-4. Event-Driven Workers: Асинхронная обработка событий (заказов) через Kafka и Celery.
+## Архитектура
 
-## Распределенная обработка заказов
-В систему внедрена событийно-ориентированная логика:
-Kafka Producer: При успешном создании заказа API генерирует событие в топик order_events.
-Kafka Consumer: Фоновый сервис слушает топик и инициирует асинхронные задачи.
-Celery Worker: Выполняет тяжелые операции (имитация отправки писем, смена статусов) без блокировки основного потока API.
+Layered Architecture с явным разделением ответственности:
 
-## Инфраструктура и Масштабирование
+```
+Routers → Services → Repositories → Models
+```
 
-Nginx Load Balancing: Проект развернут за Nginx, который выступает в роли Reverse Proxy и распределяет трафик между несколькими инстансами приложения (app-1, app-2). Это обеспечивает отказоустойчивость и готовность к горизонтальному масштабированию.
+- **Routers** — HTTP слой, валидация входных данных через Pydantic v2
+- **Services** — бизнес-логика, оркестрация зависимостей
+- **Repositories** — изолированный CRUD через SQLAlchemy async
+- **Kafka** — асинхронная доставка событий между сервисами
 
-Database Optimization: Использование стратегии selectinload для подгрузки связанных сущностей (OrderItem -> Product). Это решает проблему N+1 в асинхронной среде, минимизируя количество запросов к PostgreSQL.
+---
 
-Docker Healthchecks: Настроены проверки состояния для Kafka и Postgres. Сервисы-потребители ожидают полной готовности инфраструктуры перед запуском, что гарантирует стабильность старта всей системы.
+## Ролевая модель (RBAC)
 
-## Ролевая модель доступа (RBAC)
+| Роль | Возможности |
+|------|------------|
+| `user` | Просмотр каталога, создание заказов |
+| `seller` | Управление своим магазином и товарами |
+| `admin` | Управление пользователями, заявками, модерация магазинов |
+| `creator` | Все права admin + управление ролями пользователей |
+| `banned` | Доступ заблокирован независимо от токена |
 
-В системе реализована гибкая проверка прав доступа через кастомные зависимости:
+Переход `user → seller` через заявку, рассматриваемую администратором.
 
-*User:* Просмотр каталога товаров, создание и управление собственными заказами.
-*Admin:* Управление товарами (CRUD), мониторинг всех заказов, просмотр списка пользователей и их блокировка.
-*Creator:* Обладает всеми правами администратора. Эксклюзивная функция: управление ролями пользователей (назначение администраторов).
-*Banned:* Заблокированный пользователь. Доступ ко всем эндпоинтам закрыт независимо от наличия валидного токена.
+---
 
-## Безопасность & Redis
+## Event-Driven обработка
 
-В проекте реализован расширенный слой безопасности на базе Redis:
+```
+POST /orders
+    └── Kafka producer → топик order_created
+            └── order_consumer
+                    ├── process_order.delay()        # обработка по этапам
+                    └── send_order_confirmation.delay()  # email пользователю
 
-**JWT Blacklist:** При логауте JTI токена заносится в Redis с TTL равным оставшемуся времени жизни токена. Каждый запрос проверяется через Middleware — токен из чёрного списка немедленно отклоняется.
+PATCH /admin/seller-applications/{id}/review
+    └── Kafka producer → топик seller.notification
+            └── notify_consumer → send_application_result.delay()
 
-**Rate Limiting (Sliding Window):** Ограничение 5 запросов за 30 секунд на пользователя. Реализовано через Sorted Set — запросы удаляются поочерёдно по истечении времени, исключая возможность флуда на границе окна.
+PATCH /admin/moderation/{id}/review
+    └── Kafka producer → топик seller.notification
+            └── notify_consumer → send_moderation_result.delay()
+```
 
-**Бан-система:** Статус блокировки пользователя кешируется в Redis. Забаненный пользователь не может взаимодействовать с системой независимо от наличия валидного токена.
+---
 
-**Статистика:** Подсчёт уникальных активных пользователей за сутки через Redis, доступен администратору.
+## Celery воркеры
 
-## Middleware & Logging
+| Воркер | Pool | Очередь | Задачи |
+|--------|------|---------|--------|
+| `shop_worker_io` | eventlet | `io_tasks` | Email уведомления |
+| `shop_worker_cpu` | prefork | `cpu_tasks` | Обработка заказов по этапам (pending → processing → shipping → delivered) |
 
-Внедрен кастомный слой логирования запросов в реальном времени:
-**Успешные запросы (Status < 400):** Логируются как `INFO` в терминал для мониторинга активности.
-**Ошибки и предупреждения (Status ≥ 400):** Выводятся как `WARNING/ERROR`, позволяя мгновенно реагировать на невалидные данные или сбои.
+Мониторинг воркеров — Flower, доступен по адресу `/flower/` (закрыт basic auth через Nginx).
 
-## Тестирование (QA)
+---
 
-Проект полностью покрыт автоматизированными тестами, что гарантирует стабильность при внесении изменений.
+## Безопасность
 
-**Покрытие (Coverage):** 100% по роутерам, 97% по сервисам.
-**Количество тестов:** 86 сценариев (Unit & Functional).
-**Методология:** Тестирование роутеров через моки сервисов и репозиториев (`AsyncMock`).
-**Именование:** Использован интуитивный стандарт `test_функционал_expected-status-code` (например, `test_register_409`).
+- **JWT Blacklist** — при логауте JTI токена заносится в Redis с TTL равным оставшемуся времени жизни
+- **Rate Limiting** — Sliding Window через Redis Sorted Set, ключ по `user_id` (fallback на IP для неавторизованных)
+- **Бан-система** — статус бана кешируется в Redis, проверяется на каждый запрос
+- **Security headers** — `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`
+- **server_tokens off** — версия Nginx скрыта из заголовков
 
-## Запуск тестов с отчетом о покрытии
+---
+
+## Redis кэширование
+
+- Категории — Set с TTL
+- Продукты магазина — JSON string через `setex`
+- Статистика уникальных активных пользователей за сутки (доступна администратору)
+
+---
+
+## Тестирование
+
+Проект покрыт автоматизированными тестами на pytest + pytest-asyncio.
+Тесты роутеров реализованы через моки сервисов (`AsyncMock`) без поднятия реальной БД.
+
 ```bash
 pytest tests --cov=routers --cov=services -s
 ```
 
-## Быстрый запуск (Docker)
+---
 
-Проект полностью готов к развертыванию через Docker.
+## Быстрый запуск
 
-1. **Склонируйте репозиторий:**
+1. Клонируй репозиторий:
 ```bash
-    git clone https://github.com/Alex21D31/alex_async_fastapi_21d31.git
+git clone https://github.com/Alex21D31/alex_async_fastapi_21d31.git
 ```
 
-2. **Переменные окружения**
-
-    Создай `.env` файл в корне проекта по примеру `.env.example`:
+2. Создай `.env` файл по примеру `.env.example`:
 ```env
-    DATABASE_URL=postgresql+asyncpg://user:password@db:5432/shop
-    SECRET_KEY=your-secret-key
-    ALGORITHM=HS256
-    LIVE_TIME=30
-    DB_USER=your-db-user
-    DB_PASSWORD=your-db-password
-    DB_NAME=your-db-name
-    REDIS_HOST=redis
-    REDIS_PORT=6379
-    KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    KAFKA_TOPIC_ORDER_CREATED=order_events
+DATABASE_URL=postgresql+asyncpg://user:password@db:5432/shop
+SECRET_KEY=your-secret-key
+ALGORITHM=HS256
+LIVE_TIME=30
+DB_USER=your-db-user
+DB_PASSWORD=your-db-password
+DB_NAME=your-db-name
+REDIS_HOST=redis
+REDIS_PORT=6379
+KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 ```
 
-3. **Запустите контейнеры:**
+3. Запусти:
 ```bash
-    docker-compose up --build
+docker compose up --build
 ```
 
-*Приложение будет доступно по адресу `http://localhost:8000`. Интерактивная документация Swagger: `/docs`.*
+- Swagger UI: `http://localhost/docs`
+- Flower: `http://localhost/flower/`
+
+---
 
 ## Структура проекта
+
 ```
 SHOP_PROJECT/
-├── alembic/            # Миграции базы данных
-├── celery_utils/       # Настройки Celery и фоновые задачи
-├── kafka_utils/        # Продюсеры и консюмеры для работы с Kafka
-├── repositories/       # Слой работы с БД (CRUD операции)
-├── routers/            # Эндпоинты API
-├── services/           # Ядро системы (бизнес-логика)
-├── tests/              # Юнит и функциональные тесты
-├── auth.py             # Логика аутентификации и JWT
-├── config.py           # Управление настройками и .env
-├── database.py         # Настройка асинхронного движка БД
-├── decorators.py       # Кастомные декораторы (права доступа)
-├── dependencies.py     # Инъекция зависимостей
-├── docker-compose.yaml # Конфигурация всей инфраструктуры
-├── dockerfile          # Инструкции по сборке образа приложения
-├── main.py             # Точка входа в FastAPI приложение
-├── middleware.py       # Логирование и обработка запросов
-├── models.py           # Описание таблиц базы данных
-├── nginx.conf          # Конфигурация прокси-сервера и балансировщика
-├── pytest.ini          # Настройки тестового фреймворка
-├── README.md           # Документация проекта
-├── requirements.txt    # Список библиотек
-├── sandbox.py          # Песочница для экспериментов с кодом
-└── schemas.py          # Pydantic модели (валидация данных)
+├── alembic/                    # Миграции БД
+├── celery_utils/
+│   ├── celery_app.py           # Конфигурация + роутинг очередей
+│   ├── email_tasks.py          # Email задачи
+│   └── order_tasks.py          # process_order по этапам
+├── kafka_utils/
+│   ├── producer.py             # Отправка событий
+│   ├── consumer.py             # order_created консьюмер
+│   └── notify_consumer.py      # seller.notification консьюмер
+├── repositories/               # CRUD слой (SQLAlchemy)
+├── routers/                    # API эндпоинты
+├── services/                   # Бизнес-логика
+├── tests/                      # Тесты
+├── auth.py                     # JWT аутентификация
+├── config.py                   # Настройки (.env)
+├── database.py                 # Async engine + session
+├── decorators.py               # RBAC декораторы
+├── dependencies.py             # DI зависимости
+├── docker-compose.yaml         # Полная инфраструктура
+├── main.py                     # Точка входа + lifespan
+├── middleware.py               # Logging + Rate Limiting
+├── models.py                   # SQLAlchemy модели
+├── nginx.conf                  # Reverse proxy + security
+├── schemas.py                  # Pydantic схемы
+└── requirements.txt
 ```
