@@ -52,13 +52,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
       - name: Run tests
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/shop_test
-          REDIS_URL: redis://localhost:6379
           SECRET_KEY: test_secret_key
           ALGORITHM: HS256
+          LIVE_TIME: 30
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: shop_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
         run: pytest tests/ -v --tb=short
