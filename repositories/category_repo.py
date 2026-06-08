@@ -19,3 +19,6 @@ class CategoryRepository:
     async def delete(self, category : Category):
         await self.db.delete(category)
         await self.db.commit()
+    async def get_by_name(self, name: str) -> Category | None:
+        result = await self.db.execute(select(Category).where(Category.name == name))
+        return result.scalar_one_or_none()

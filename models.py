@@ -85,7 +85,7 @@ class Shop(Base):
     description : Mapped[str | None]
     seller_id : Mapped[int] = mapped_column(ForeignKey('users.id'))
     seller : Mapped['User'] = relationship('User', lazy='selectin')
-    products: Mapped[list['ShopProduct']] = relationship('ShopProduct', lazy='selectin')
+    products: Mapped[list['ShopProduct']] = relationship('ShopProduct', lazy='selectin', overlaps="shop")
     orders: Mapped[list['Order']] = relationship('Order', back_populates='shop')
     is_verified : Mapped[bool] = mapped_column(default=False)
     created_at : Mapped[datetime] = mapped_column(server_default=func.now())
@@ -97,7 +97,7 @@ class ShopProduct(Base):
     shop_id : Mapped[int] = mapped_column(ForeignKey('shops.id'))
     product_id : Mapped[int] = mapped_column(ForeignKey('products.id'))
     category_id : Mapped[int] = mapped_column(ForeignKey('categories.id'))
-    shop : Mapped['Shop'] = relationship('Shop', lazy='selectin')
+    shop : Mapped['Shop'] = relationship('Shop', lazy='selectin', overlaps="products")
     product : Mapped['Product'] = relationship('Product', lazy='selectin')
     category : Mapped['Category'] = relationship('Category', lazy='selectin')
 class SellerApplication(Base):

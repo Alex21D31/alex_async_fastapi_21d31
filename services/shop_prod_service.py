@@ -71,7 +71,7 @@ class ShopProductService:
         await self.redis_service.clear_redis_key(f'products_by_{shop.name}')
         return await self.shop_prod_repo.delete(product)
     async def get_products_by_price(self, shop_name : str, min_price : int, max_price : int) -> list[ShopProduct]:
-        products = await self.get_products_by_price(shop_name, min_price, max_price)
+        products = await self.shop_prod_repo.get_products_by_price(shop_name, min_price, max_price)
         if not products:
             raise HTTPException(status_code=404, detail='Продуктов из выбранного диапазона цен нет в этом магазине или такого магазина не существует.')
         return products

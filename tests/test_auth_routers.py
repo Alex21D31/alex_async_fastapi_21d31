@@ -5,13 +5,14 @@ from auth import verify_token
 async def test_register_200(client, mock_user_repo, user_service, fake_user):
     mock_user_repo.get_by_email.return_value = None
     mock_user_repo.save.return_value = fake_user
-    data = {'email': 'alex@test.com', 'name': 'alex', 'password': 'pass', 'phone': '123'}
+    data = {'username': 'alex', 'email': 'alex@test.com', 'password': 'pass'}
+    mock_user_repo.get_by_username.return_value = None
     response = await client.post('/auth/register', json=data)
     assert response.status_code == 200
 
 async def test_register_409(client, mock_user_repo, user_service, fake_user):
     mock_user_repo.get_by_email.return_value = fake_user
-    data = {'name': 'alex','phone': '123','email': 'alex@test.com',  'password': 'pass',}
+    data = {'username': 'alex', 'email': 'alex@test.com', 'password': 'pass'}
     response = await client.post('/auth/register', json=data)
     assert response.status_code == 409
 
