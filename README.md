@@ -127,7 +127,7 @@ pytest tests --cov=routers --cov=services -s
 
 1. Клонируй репозиторий:
 ```bash
-git clone https://github.com/Alex21D31/alex_async_fastapi_21d31.git
+git clone https://github.com/Defaitl/python_project.git
 ```
 
 2. Создай `.env` файл по примеру `.env.example`:
