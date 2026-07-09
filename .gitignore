@@ -12,5 +12,5 @@ env/
 .DS_Store
 .coverage
 sandbox.py
-.htpassswd
 CLAUDE.md
+.htpasswd
